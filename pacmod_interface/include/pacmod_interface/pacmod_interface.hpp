@@ -37,6 +37,7 @@
 #include <pacmod3_msgs/msg/system_rpt_int.hpp>
 #include <pacmod3_msgs/msg/wheel_speed_rpt.hpp>
 #include <tier4_api_utils/tier4_api_utils.hpp>
+#include <tier4_api_msgs/msg/door_status.hpp>
 #include <tier4_external_api_msgs/srv/set_door.hpp>
 #include <tier4_vehicle_msgs/msg/actuation_command_stamped.hpp>
 #include <tier4_vehicle_msgs/msg/actuation_status_stamped.hpp>
@@ -66,7 +67,8 @@ private:
   typedef message_filters::sync_policies::ApproximateTime<
     pacmod3_msgs::msg::SystemRptFloat, pacmod3_msgs::msg::WheelSpeedRpt,
     pacmod3_msgs::msg::SystemRptFloat, pacmod3_msgs::msg::SystemRptFloat,
-    pacmod3_msgs::msg::SystemRptInt, pacmod3_msgs::msg::SystemRptInt, pacmod3_msgs::msg::GlobalRpt>
+    pacmod3_msgs::msg::SystemRptInt, pacmod3_msgs::msg::SystemRptInt,
+    pacmod3_msgs::msg::GlobalRpt, pacmod3_msgs::msg::SystemRptInt>
     PacmodFeedbacksSyncPolicy;
 
   /* subscribers */
@@ -92,6 +94,7 @@ private:
   std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>> shift_rpt_sub_;
   std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>> turn_rpt_sub_;
   std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::GlobalRpt>> global_rpt_sub_;
+  std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>> rear_door_rpt_sub_;
   std::unique_ptr<message_filters::Synchronizer<PacmodFeedbacksSyncPolicy>> pacmod_feedbacks_sync_;
 
   /* publishers */
@@ -118,6 +121,7 @@ private:
     hazard_lights_status_pub_;
   rclcpp::Publisher<ActuationStatusStamped>::SharedPtr actuation_status_pub_;
   rclcpp::Publisher<SteeringWheelStatusStamped>::SharedPtr steering_wheel_status_pub_;
+  rclcpp::Publisher<tier4_api_msgs::msg::DoorStatus>::SharedPtr door_status_pub_;
 
   rclcpp::TimerBase::SharedPtr timer_;
 
@@ -203,7 +207,8 @@ private:
     const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr brake_rpt,
     const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr gear_cmd_rpt,
     const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr turn_rpt,
-    const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt);
+    const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt,
+    const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr rear_door_rpt);
 
   /*  functions */
   void publishCommands();
@@ -232,6 +237,8 @@ private:
   void setDoor(
     const tier4_external_api_msgs::srv::SetDoor::Request::SharedPtr request,
     const tier4_external_api_msgs::srv::SetDoor::Response::SharedPtr response);
+  tier4_api_msgs::msg::DoorStatus toAutowareDoorStatusMsg(
+    const pacmod3_msgs::msg::SystemRptInt & msg_ptr);
 };
 
 #endif  // PACMOD_INTERFACE__PACMOD_INTERFACE_HPP_

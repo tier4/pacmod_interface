@@ -105,16 +105,16 @@ PacmodInterface::PacmodInterface()
     this, "/pacmod/turn_rpt");
   global_rpt_sub_ = std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::GlobalRpt>>(
     this, "/pacmod/global_rpt");
+  rear_door_rpt_sub_ = std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>>(
+    this, "/pacmod/rear_pass_door_rpt");
 
   pacmod_feedbacks_sync_ =
     std::make_unique<message_filters::Synchronizer<PacmodFeedbacksSyncPolicy>>(
       PacmodFeedbacksSyncPolicy(10), *steer_wheel_rpt_sub_, *wheel_speed_rpt_sub_, *accel_rpt_sub_,
-      *brake_rpt_sub_, *shift_rpt_sub_, *turn_rpt_sub_, *global_rpt_sub_);
+      *brake_rpt_sub_, *shift_rpt_sub_, *turn_rpt_sub_, *global_rpt_sub_, *rear_door_rpt_sub_);
 
   pacmod_feedbacks_sync_->registerCallback(std::bind(
-    &PacmodInterface::callbackPacmodRpt, this, std::placeholders::_1, std::placeholders::_2,
-    std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6,
-    std::placeholders::_7));
+    &PacmodInterface::callbackPacmodRpt, this, _1, _2, _3, _4, _5, _6, _7, _8));
 
   /* publisher */
   // To pacmod
@@ -151,6 +151,8 @@ PacmodInterface::PacmodInterface()
     create_publisher<ActuationStatusStamped>("/vehicle/status/actuation_status", 1);
   steering_wheel_status_pub_ =
     create_publisher<SteeringWheelStatusStamped>("/vehicle/status/steering_wheel_status", 1);
+  door_status_pub_ =
+    create_publisher<tier4_api_msgs::msg::DoorStatus>("/vehicle/status/door_status", 1);
 
   /* service */
   //  From autoware
@@ -215,7 +217,8 @@ void PacmodInterface::callbackPacmodRpt(
   const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr brake_rpt,
   const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr shift_rpt,
   const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr turn_rpt,
-  const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt)
+  const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt,
+  const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr rear_door_rpt)
 {
   is_pacmod_rpt_received_ = true;
   steer_wheel_rpt_ptr_ = steer_wheel_rpt;
@@ -318,6 +321,11 @@ void PacmodInterface::callbackPacmodRpt(
     hazard_msg.stamp = header.stamp;
     hazard_msg.report = toAutowareHazardLightsReport(*turn_rpt);
     hazard_lights_status_pub_->publish(hazard_msg);
+  }
+
+  /* publish current door status */
+  {
+    door_status_pub_->publish(toAutowareDoorStatusMsg(*rear_door_rpt));
   }
 }
 
@@ -740,4 +748,29 @@ void PacmodInterface::setDoor(
     // close the door
     response->status.message = "Success to close the door.";
   }
+}
+
+tier4_api_msgs::msg::DoorStatus PacmodInterface::toAutowareDoorStatusMsg(
+  const pacmod3_msgs::msg::SystemRptInt & msg_ptr)
+{
+  using pacmod3_msgs::msg::SystemRptInt;
+  using tier4_api_msgs::msg::DoorStatus;
+  DoorStatus door_status;
+
+  door_status.status = DoorStatus::UNKNOWN;
+
+  if (msg_ptr.command == SystemRptInt::DOOR_CLOSE && msg_ptr.output == SystemRptInt::DOOR_OPEN) {
+    // do not used (command & output are always the same value)
+    door_status.status = DoorStatus::DOOR_CLOSING;
+  } else if (  // NOLINT
+    msg_ptr.command == SystemRptInt::DOOR_OPEN && msg_ptr.output == SystemRptInt::DOOR_CLOSE) {
+    // do not used (command & output are always the same value)
+    door_status.status = DoorStatus::DOOR_OPENING;
+  } else if (msg_ptr.output == SystemRptInt::DOOR_CLOSE) {
+    door_status.status = DoorStatus::DOOR_CLOSED;
+  } else if (msg_ptr.output == SystemRptInt::DOOR_OPEN) {
+    door_status.status = DoorStatus::DOOR_OPENED;
+  }
+
+  return door_status;
 }
