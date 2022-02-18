@@ -36,6 +36,8 @@
 #include <pacmod3_msgs/msg/system_rpt_float.hpp>
 #include <pacmod3_msgs/msg/system_rpt_int.hpp>
 #include <pacmod3_msgs/msg/wheel_speed_rpt.hpp>
+#include <tier4_api_utils/tier4_api_utils.hpp>
+#include <tier4_external_api_msgs/srv/set_door.hpp>
 #include <tier4_vehicle_msgs/msg/actuation_command_stamped.hpp>
 #include <tier4_vehicle_msgs/msg/actuation_status_stamped.hpp>
 #include <tier4_vehicle_msgs/msg/steering_wheel_status_stamped.hpp>
@@ -99,6 +101,7 @@ private:
   rclcpp::Publisher<pacmod3_msgs::msg::SteeringCmd>::SharedPtr steer_cmd_pub_;
   rclcpp::Publisher<pacmod3_msgs::msg::SystemCmdInt>::SharedPtr shift_cmd_pub_;
   rclcpp::Publisher<pacmod3_msgs::msg::SystemCmdInt>::SharedPtr turn_cmd_pub_;
+  rclcpp::Publisher<pacmod3_msgs::msg::SystemCmdInt>::SharedPtr door_cmd_pub_;
   rclcpp::Publisher<pacmod3_msgs::msg::SteeringCmd>::SharedPtr
     raw_steer_cmd_pub_;  // only for debug
 
@@ -153,6 +156,9 @@ private:
   const int hazard_recover_cmd_num_ = 5;
 
   vehicle_info_util::VehicleInfo vehicle_info_;
+
+  // Service
+  tier4_api_utils::Service<tier4_external_api_msgs::srv::SetDoor>::SharedPtr srv_;
 
   /* input values */
   ActuationCommandStamped::ConstSharedPtr actuation_cmd_ptr_;
@@ -221,6 +227,11 @@ private:
     const double current_steer_cmd, const double prev_steer_cmd,
     const rclcpp::Time & current_steer_time, const rclcpp::Time & prev_steer_time,
     const double steer_rate, const double current_steer_output, const bool engage);
+  pacmod3_msgs::msg::SystemCmdInt createClearOverrideDoorCommand();
+  pacmod3_msgs::msg::SystemCmdInt createDoorCommand(const bool open);
+  void setDoor(
+    const tier4_external_api_msgs::srv::SetDoor::Request::SharedPtr request,
+    const tier4_external_api_msgs::srv::SetDoor::Response::SharedPtr response);
 };
 
 #endif  // PACMOD_INTERFACE__PACMOD_INTERFACE_HPP_

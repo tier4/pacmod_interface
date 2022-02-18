@@ -23,6 +23,8 @@ PacmodInterface::PacmodInterface()
 : Node("pacmod_interface"),
   vehicle_info_(vehicle_info_util::VehicleInfoUtil(*this).getVehicleInfo())
 {
+  using namespace std::placeholders;
+
   /* setup parameters */
   base_frame_id_ = declare_parameter("base_frame_id", "base_link");
   command_timeout_ms_ = declare_parameter("command_timeout_ms", 1000);
@@ -63,8 +65,6 @@ PacmodInterface::PacmodInterface()
   prev_steer_cmd_.command = 0.0;
 
   /* subscribers */
-  using std::placeholders::_1;
-
   // From autoware
   control_cmd_sub_ = create_subscription<autoware_auto_control_msgs::msg::AckermannControlCommand>(
     "/control/command/control_cmd", 1, std::bind(&PacmodInterface::callbackControlCmd, this, _1));
@@ -128,6 +128,8 @@ PacmodInterface::PacmodInterface()
     create_publisher<pacmod3_msgs::msg::SystemCmdInt>("/pacmod/shift_cmd", rclcpp::QoS{1});
   turn_cmd_pub_ =
     create_publisher<pacmod3_msgs::msg::SystemCmdInt>("/pacmod/turn_cmd", rclcpp::QoS{1});
+  door_cmd_pub_ = create_publisher<pacmod3_msgs::msg::SystemCmdInt>(
+    "pacmod/as_rx/rear_pass_door_cmd", rclcpp::QoS{1});
   raw_steer_cmd_pub_ = create_publisher<pacmod3_msgs::msg::SteeringCmd>(
     "/pacmod/raw_steer_cmd", rclcpp::QoS{1});  // only for debug
 
@@ -149,6 +151,12 @@ PacmodInterface::PacmodInterface()
     create_publisher<ActuationStatusStamped>("/vehicle/status/actuation_status", 1);
   steering_wheel_status_pub_ =
     create_publisher<SteeringWheelStatusStamped>("/vehicle/status/steering_wheel_status", 1);
+
+  /* service */
+  //  From autoware
+  tier4_api_utils::ServiceProxyNodeInterface proxy(this);
+  srv_ = proxy.create_service<tier4_external_api_msgs::srv::SetDoor>(
+    "/api/vehicle/set/door", std::bind(&PacmodInterface::setDoor, this, _1, _2));
 
   // Timer
   const auto period_ns = rclcpp::Rate(loop_rate_).period();
@@ -682,4 +690,54 @@ double PacmodInterface::steerWheelRateLimiter(
   const double limited_steer_cmd =
     prev_steer_cmd + std::min(std::max(-max_dsteer, dsteer), max_dsteer);
   return limited_steer_cmd;
+}
+
+pacmod3_msgs::msg::SystemCmdInt PacmodInterface::createClearOverrideDoorCommand()
+{
+  pacmod3_msgs::msg::SystemCmdInt door_cmd;
+  door_cmd.header.frame_id = "base_link";
+  door_cmd.header.stamp = this->now();
+  door_cmd.clear_override = true;
+  return door_cmd;
+}
+
+pacmod3_msgs::msg::SystemCmdInt PacmodInterface::createDoorCommand(const bool open)
+{
+  pacmod3_msgs::msg::SystemCmdInt door_cmd;
+  door_cmd.header.frame_id = "base_link";
+  door_cmd.header.stamp = this->now();
+  door_cmd.enable = true;
+
+  if (open) {
+    door_cmd.command = pacmod3_msgs::msg::SystemCmdInt::DOOR_OPEN;
+  } else {
+    door_cmd.command = pacmod3_msgs::msg::SystemCmdInt::DOOR_CLOSE;
+  }
+  return door_cmd;
+}
+
+void PacmodInterface::setDoor(
+  const tier4_external_api_msgs::srv::SetDoor::Request::SharedPtr request,
+  const tier4_external_api_msgs::srv::SetDoor::Response::SharedPtr response)
+{
+  if (!engage_cmd_) {
+    // when the vehicle mode is manual, ignore the request.
+    response->status.code = tier4_external_api_msgs::msg::ResponseStatus::IGNORED;
+    response->status.message = "Current vehicle mode is manual. The request is ignored.";
+    return;
+  }
+
+  // open/close the door
+  door_cmd_pub_->publish(createClearOverrideDoorCommand());
+  rclcpp::Rate(10.0).sleep();  // avoid message loss
+  door_cmd_pub_->publish(createDoorCommand(request->open));
+  response->status.code = tier4_external_api_msgs::msg::ResponseStatus::SUCCESS;
+
+  if (request->open) {
+    // open the door
+    response->status.message = "Success to open the door.";
+  } else {
+    // close the door
+    response->status.message = "Success to close the door.";
+  }
 }
