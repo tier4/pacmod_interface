@@ -16,6 +16,7 @@
 #define PACMOD_INTERFACE__PACMOD_INTERFACE_HPP_
 
 #include <rclcpp/rclcpp.hpp>
+#include <tier4_api_utils/tier4_api_utils.hpp>
 #include <vehicle_info_util/vehicle_info_util.hpp>
 
 #include <autoware_auto_control_msgs/msg/ackermann_control_command.hpp>
@@ -36,7 +37,6 @@
 #include <pacmod3_msgs/msg/system_rpt_float.hpp>
 #include <pacmod3_msgs/msg/system_rpt_int.hpp>
 #include <pacmod3_msgs/msg/wheel_speed_rpt.hpp>
-#include <tier4_api_utils/tier4_api_utils.hpp>
 #include <tier4_api_msgs/msg/door_status.hpp>
 #include <tier4_external_api_msgs/srv/set_door.hpp>
 #include <tier4_vehicle_msgs/msg/actuation_command_stamped.hpp>
@@ -67,8 +67,8 @@ private:
   typedef message_filters::sync_policies::ApproximateTime<
     pacmod3_msgs::msg::SystemRptFloat, pacmod3_msgs::msg::WheelSpeedRpt,
     pacmod3_msgs::msg::SystemRptFloat, pacmod3_msgs::msg::SystemRptFloat,
-    pacmod3_msgs::msg::SystemRptInt, pacmod3_msgs::msg::SystemRptInt,
-    pacmod3_msgs::msg::GlobalRpt, pacmod3_msgs::msg::SystemRptInt>
+    pacmod3_msgs::msg::SystemRptInt, pacmod3_msgs::msg::SystemRptInt, pacmod3_msgs::msg::GlobalRpt,
+    pacmod3_msgs::msg::SystemRptInt>
     PacmodFeedbacksSyncPolicy;
 
   /* subscribers */

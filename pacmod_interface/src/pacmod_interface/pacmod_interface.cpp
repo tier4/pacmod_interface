@@ -23,8 +23,6 @@ PacmodInterface::PacmodInterface()
 : Node("pacmod_interface"),
   vehicle_info_(vehicle_info_util::VehicleInfoUtil(*this).getVehicleInfo())
 {
-  using namespace std::placeholders;
-
   /* setup parameters */
   base_frame_id_ = declare_parameter("base_frame_id", "base_link");
   command_timeout_ms_ = declare_parameter("command_timeout_ms", 1000);
@@ -65,6 +63,8 @@ PacmodInterface::PacmodInterface()
   prev_steer_cmd_.command = 0.0;
 
   /* subscribers */
+  using std::placeholders::_1;
+
   // From autoware
   control_cmd_sub_ = create_subscription<autoware_auto_control_msgs::msg::AckermannControlCommand>(
     "/control/command/control_cmd", 1, std::bind(&PacmodInterface::callbackControlCmd, this, _1));
@@ -105,8 +105,9 @@ PacmodInterface::PacmodInterface()
     this, "/pacmod/turn_rpt");
   global_rpt_sub_ = std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::GlobalRpt>>(
     this, "/pacmod/global_rpt");
-  rear_door_rpt_sub_ = std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>>(
-    this, "/pacmod/rear_pass_door_rpt");
+  rear_door_rpt_sub_ =
+    std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>>(
+      this, "/pacmod/rear_pass_door_rpt");
 
   pacmod_feedbacks_sync_ =
     std::make_unique<message_filters::Synchronizer<PacmodFeedbacksSyncPolicy>>(
@@ -114,7 +115,9 @@ PacmodInterface::PacmodInterface()
       *brake_rpt_sub_, *shift_rpt_sub_, *turn_rpt_sub_, *global_rpt_sub_, *rear_door_rpt_sub_);
 
   pacmod_feedbacks_sync_->registerCallback(std::bind(
-    &PacmodInterface::callbackPacmodRpt, this, _1, _2, _3, _4, _5, _6, _7, _8));
+    &PacmodInterface::callbackPacmodRpt, this, std::placeholders::_1, std::placeholders::_2,
+    std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6,
+    std::placeholders::_7, std::placeholders::_8));
 
   /* publisher */
   // To pacmod
@@ -158,7 +161,8 @@ PacmodInterface::PacmodInterface()
   //  From autoware
   tier4_api_utils::ServiceProxyNodeInterface proxy(this);
   srv_ = proxy.create_service<tier4_external_api_msgs::srv::SetDoor>(
-    "/api/vehicle/set/door", std::bind(&PacmodInterface::setDoor, this, _1, _2));
+    "/api/vehicle/set/door",
+    std::bind(&PacmodInterface::setDoor, this, std::placeholders::_1, std::placeholders::_2));
 
   // Timer
   const auto period_ns = rclcpp::Rate(loop_rate_).period();
