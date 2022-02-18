@@ -7,11 +7,15 @@ repositories:
     type: git
     url: https://github.com/autowarefoundation/autoware_common.git
     version: tier4/proposal
-  universe/tier4_autoware_msgs:
-    type: git
-    url: https://github.com/tier4/tier4_autoware_msgs.git
-    version: tier4/universe
-  universe/universe:
+  universe/autoware:
     type: git
     url: https://github.com/autowarefoundation/autoware.universe
     version: tier4/proposal
+  vendor/pacmod3_msgs:
+    type: git
+    url: https://github.com/astuff/pacmod3_msgs
+    version: 1.0.0
+  tmp/tier4_autoware_msgs:
+    type: git
+    url: https://github.com/tier4/tier4_autoware_msgs.git
+    version: tier4/universe
