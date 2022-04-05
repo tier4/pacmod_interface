@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-
   <arg name="pacmod_param_path" default="$(find-pkg-share pacmod_interface)/config/pacmod.param.yaml"/>
   <arg name="pacmod_extra_param_path" default="$(find-pkg-share pacmod_interface)/config/pacmod_extra.param.yaml"/>
 
@@ -14,8 +13,7 @@
   </node>
 
   <!-- pacmod diagnostics publisher -->
-  <node pkg="pacmod_interface" exec="pacmod_diag_publisher" name="pacmod_diag_publisher" output="screen">
-  </node>
+  <node pkg="pacmod_interface" exec="pacmod_diag_publisher" name="pacmod_diag_publisher" output="screen"/>
 
   <!-- pacmod additional parameter changer -->
   <node pkg="pacmod_interface" exec="pacmod_dynamic_parameter_changer" name="pacmod_dynamic_parameter_changer" output="screen">
@@ -23,5 +21,4 @@
     <remap from="~/output/can" to="/pacmod/can_rx"/>
     <remap from="~/input/steer_rpt" to="/pacmod/steering_rpt"/>
   </node>
-
 </launch>
