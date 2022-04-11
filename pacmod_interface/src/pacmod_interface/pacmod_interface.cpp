@@ -132,7 +132,7 @@ PacmodInterface::PacmodInterface()
   turn_cmd_pub_ =
     create_publisher<pacmod3_msgs::msg::SystemCmdInt>("/pacmod/turn_cmd", rclcpp::QoS{1});
   door_cmd_pub_ = create_publisher<pacmod3_msgs::msg::SystemCmdInt>(
-    "/pacmod/as_rx/rear_pass_door_cmd", rclcpp::QoS{1});
+    "/pacmod/rear_pass_door_cmd", rclcpp::QoS{1});
   raw_steer_cmd_pub_ = create_publisher<pacmod3_msgs::msg::SteeringCmd>(
     "/pacmod/raw_steer_cmd", rclcpp::QoS{1});  // only for debug
 
@@ -732,12 +732,12 @@ void PacmodInterface::setDoor(
   const tier4_external_api_msgs::srv::SetDoor::Request::SharedPtr request,
   const tier4_external_api_msgs::srv::SetDoor::Response::SharedPtr response)
 {
-  if (!engage_cmd_) {
-    // when the vehicle mode is manual, ignore the request.
-    response->status.code = tier4_external_api_msgs::msg::ResponseStatus::IGNORED;
-    response->status.message = "Current vehicle mode is manual. The request is ignored.";
-    return;
-  }
+  // if (!engage_cmd_) {
+  //   // when the vehicle mode is manual, ignore the request.
+  //   response->status.code = tier4_external_api_msgs::msg::ResponseStatus::IGNORED;
+  //   response->status.message = "Current vehicle mode is manual. The request is ignored.";
+  //   return;
+  // }
 
   // open/close the door
   door_cmd_pub_->publish(createClearOverrideDoorCommand());
