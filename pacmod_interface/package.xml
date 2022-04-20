@@ -19,7 +19,10 @@
   <depend>pacmod3_msgs</depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
+  <depend>tier4_api_msgs</depend>
+  <depend>tier4_api_utils</depend>
   <depend>tier4_debug_msgs</depend>
+  <depend>tier4_external_api_msgs</depend>
   <depend>tier4_vehicle_msgs</depend>
   <depend>vehicle_info_util</depend>
 
