@@ -248,7 +248,7 @@ void PacmodInterface::callbackPacmodRpt(
     steer_wheel_rpt_ptr_->output;  // current vehicle steering wheel angle [rad]
   const double adaptive_gear_ratio =
     calculateVariableGearRatio(current_velocity, current_steer_wheel);
-  const double current_steer = current_steer_wheel / adaptive_gear_ratio - steering_offset_;
+  const double current_steer = current_steer_wheel / adaptive_gear_ratio + steering_offset_;
 
   std_msgs::msg::Header header;
   header.frame_id = base_frame_id_;
