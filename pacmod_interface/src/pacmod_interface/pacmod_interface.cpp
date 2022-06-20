@@ -64,6 +64,7 @@ PacmodInterface::PacmodInterface()
 
   /* subscribers */
   using std::placeholders::_1;
+  using std::placeholders::_2;
 
   // From autoware
   control_cmd_sub_ = create_subscription<autoware_auto_control_msgs::msg::AckermannControlCommand>(
@@ -78,14 +79,17 @@ PacmodInterface::PacmodInterface()
     create_subscription<autoware_auto_vehicle_msgs::msg::HazardLightsCommand>(
       "/control/command/hazard_lights_cmd", rclcpp::QoS{1},
       std::bind(&PacmodInterface::callbackHazardLightsCommand, this, _1));
-  engage_cmd_sub_ = create_subscription<autoware_auto_vehicle_msgs::msg::Engage>(
-    "/vehicle/engage", rclcpp::QoS{1}, std::bind(&PacmodInterface::callbackEngage, this, _1));
+  // engage_cmd_sub_ = create_subscription<autoware_auto_vehicle_msgs::msg::Engage>(
+  //   "/vehicle/engage", rclcpp::QoS{1}, std::bind(&PacmodInterface::callbackEngage, this, _1));  // TODO: remove
   actuation_cmd_sub_ = create_subscription<ActuationCommandStamped>(
     "/control/command/actuation_cmd", 1,
     std::bind(&PacmodInterface::callbackActuationCmd, this, _1));
   emergency_sub_ = create_subscription<tier4_vehicle_msgs::msg::VehicleEmergencyStamped>(
     "/control/command/emergency_cmd", 1,
     std::bind(&PacmodInterface::callbackEmergencyCmd, this, _1));
+  control_mode_server_ = create_service<tier4_vehicle_msgs::srv::ControlModeRequest>(
+    "input/control_mode_request", std::bind(&PacmodInterface::onControlModeRequest, this, _1, _2));
+
 
   // From pacmod
 
@@ -207,11 +211,34 @@ void PacmodInterface::callbackHazardLightsCommand(
   hazard_lights_cmd_ptr_ = msg;
 }
 
-void PacmodInterface::callbackEngage(
-  const autoware_auto_vehicle_msgs::msg::Engage::ConstSharedPtr msg)
+// void PacmodInterface::callbackEngage(
+//   const autoware_auto_vehicle_msgs::msg::Engage::ConstSharedPtr msg)
+// {
+//   engage_cmd_ = msg->engage;
+//   is_clear_override_needed_ = true;
+// }
+
+void PacmodInterface::onControlModeRequest(
+  const tier4_vehicle_msgs::srv::ControlModeRequest::Request::SharedPtr request,
+  const tier4_vehicle_msgs::srv::ControlModeRequest::Response::SharedPtr response)
 {
-  engage_cmd_ = msg->engage;
-  is_clear_override_needed_ = true;
+  if (request->mode.data == tier4_vehicle_msgs::msg::ControlMode::AUTO){
+    engage_cmd_ = true;
+    is_clear_override_needed_ = true;
+    response->success = true;
+    return;
+  }
+
+  if (request->mode.data == tier4_vehicle_msgs::msg::ControlMode::MANUAL){
+    engage_cmd_ = false;
+    is_clear_override_needed_ = true;
+    response->success = true;
+    return;
+  }
+
+  RCLCPP_ERROR(get_logger(), "unsupported control_mode!!");
+  response->success = false;
+  return;
 }
 
 void PacmodInterface::callbackPacmodRpt(

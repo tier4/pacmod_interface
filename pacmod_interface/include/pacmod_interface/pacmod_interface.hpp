@@ -20,6 +20,7 @@
 #include <vehicle_info_util/vehicle_info_util.hpp>
 
 #include <autoware_auto_control_msgs/msg/ackermann_control_command.hpp>
+
 #include <autoware_auto_vehicle_msgs/msg/control_mode_report.hpp>
 #include <autoware_auto_vehicle_msgs/msg/engage.hpp>
 #include <autoware_auto_vehicle_msgs/msg/gear_command.hpp>
@@ -43,6 +44,8 @@
 #include <tier4_vehicle_msgs/msg/actuation_status_stamped.hpp>
 #include <tier4_vehicle_msgs/msg/steering_wheel_status_stamped.hpp>
 #include <tier4_vehicle_msgs/msg/vehicle_emergency_stamped.hpp>
+#include <tier4_vehicle_msgs/srv/control_mode_request.hpp>
+#include <tier4_vehicle_msgs/msg/control_mode.hpp>
 
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -163,6 +166,8 @@ private:
 
   // Service
   tier4_api_utils::Service<tier4_external_api_msgs::srv::SetDoor>::SharedPtr srv_;
+  rclcpp::Service<tier4_vehicle_msgs::srv::ControlModeRequest>::SharedPtr control_mode_server_;
+
 
   /* input values */
   ActuationCommandStamped::ConstSharedPtr actuation_cmd_ptr_;
@@ -239,6 +244,9 @@ private:
     const tier4_external_api_msgs::srv::SetDoor::Response::SharedPtr response);
   tier4_api_msgs::msg::DoorStatus toAutowareDoorStatusMsg(
     const pacmod3_msgs::msg::SystemRptInt & msg_ptr);
+  void onControlModeRequest(
+    const tier4_vehicle_msgs::srv::ControlModeRequest::Request::SharedPtr request,
+    const tier4_vehicle_msgs::srv::ControlModeRequest::Response::SharedPtr response);
 };
 
 #endif  // PACMOD_INTERFACE__PACMOD_INTERFACE_HPP_
