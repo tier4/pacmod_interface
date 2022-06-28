@@ -414,7 +414,7 @@ bool PacmodSteerTest::checkDriveShift()
 double PacmodSteerTest::getAccel()
 {
   if (!checkDriveShift()) {
-    return brake_for_shift_trans;
+    return 0.0;
   }
 
   if (stopping_) {
