@@ -203,7 +203,7 @@ void PacmodSteerTest::publishCommands()
   /* make engage cmd false when a driver overrides vehicle control */
   if (!prev_override_ && global_rpt_ptr_->override_active) {
     RCLCPP_WARN_THROTTLE(
-      get_logger(), *get_clock(), 1000.0, "Pacmod is overrided, enable flag is back to false");
+      get_logger(), *get_clock(), 1000.0, "Pacmod is overridden, enable flag is back to false");
     engage_cmd_ = false;
   }
   prev_override_ = global_rpt_ptr_->override_active;
