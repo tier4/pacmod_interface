@@ -107,8 +107,8 @@ PacmodSteerTest::PacmodSteerTest()
     "/vehicle/status/steering_status", rclcpp::QoS{1});
   // Timer
   auto timer_callback = std::bind(&PacmodSteerTest::publishCommands, this);
-  auto period =
-    std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(1.0 / loop_rate_));
+  auto period = std::chrono::duration_cast<std::chrono::nanoseconds>(
+    std::chrono::duration<double>(1.0 / loop_rate_));
   timer_ = std::make_shared<rclcpp::GenericTimer<decltype(timer_callback)>>(
     this->get_clock(), period, std::move(timer_callback),
     this->get_node_base_interface()->get_context());

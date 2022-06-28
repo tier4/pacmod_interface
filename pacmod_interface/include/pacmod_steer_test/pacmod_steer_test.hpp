@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef PACMOD_STEER_TEST__PACMOD_STEER_TEST_HPP
-#define PACMOD_STEER_TEST__PACMOD_STEER_TEST_HPP
+#ifndef PACMOD_STEER_TEST__PACMOD_STEER_TEST_HPP_
+#define PACMOD_STEER_TEST__PACMOD_STEER_TEST_HPP_
 
 #include <rclcpp/rclcpp.hpp>
 #include <vehicle_info_util/vehicle_info_util.hpp>
@@ -165,4 +165,4 @@ private:
   } test_mode_;
 };
 
-#endif
+#endif  // PACMOD_STEER_TEST__PACMOD_STEER_TEST_HPP_
