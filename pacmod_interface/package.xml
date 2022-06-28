@@ -11,6 +11,10 @@
   <author email="antm678@ertl.jp">T.Ando</author>
   <author email="horibe.takamasa@gmail.com">Horibe Takamasa</author>
 
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+  <build_depend>autoware_cmake</build_depend>
+
   <depend>autoware_auto_control_msgs</depend>
   <depend>autoware_auto_vehicle_msgs</depend>
   <depend>can_msgs</depend>
