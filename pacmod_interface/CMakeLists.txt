@@ -33,6 +33,11 @@ ament_auto_add_executable(pacmod_diag_publisher
   src/pacmod_interface/pacmod_diag_publisher_node.cpp
 )
 
+ament_auto_add_executable(pacmod_steer_test
+  src/pacmod_steer_test/pacmod_steer_test.cpp
+  src/pacmod_steer_test/pacmod_steer_test_node.cpp
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
