@@ -89,11 +89,6 @@ PacmodInterface::PacmodInterface()
   control_mode_server_ = create_service<tier4_vehicle_msgs::srv::ControlModeRequest>(
     "input/control_mode_request", std::bind(&PacmodInterface::onControlModeRequest, this, _1, _2));
 
-  // TODO(Horibe): remove engage interface. keep now for backward compatibility.
-  engage_cmd_sub_ = create_subscription<autoware_auto_vehicle_msgs::msg::Engage>(
-    "/vehicle/engage", rclcpp::QoS{1}, std::bind(&PacmodInterface::callbackEngage, this, _1));
-
-
   // From pacmod
 
   steer_wheel_rpt_sub_ =
@@ -212,13 +207,6 @@ void PacmodInterface::callbackHazardLightsCommand(
   const autoware_auto_vehicle_msgs::msg::HazardLightsCommand::ConstSharedPtr msg)
 {
   hazard_lights_cmd_ptr_ = msg;
-}
-
-void PacmodInterface::callbackEngage(
-  const autoware_auto_vehicle_msgs::msg::Engage::ConstSharedPtr msg)
-{
-  engage_cmd_ = msg->engage;
-  is_clear_override_needed_ = true;
 }
 
 void PacmodInterface::onControlModeRequest(
