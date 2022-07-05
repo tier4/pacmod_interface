@@ -41,10 +41,10 @@
 #include <tier4_external_api_msgs/srv/set_door.hpp>
 #include <tier4_vehicle_msgs/msg/actuation_command_stamped.hpp>
 #include <tier4_vehicle_msgs/msg/actuation_status_stamped.hpp>
+#include <tier4_vehicle_msgs/msg/control_mode.hpp>
 #include <tier4_vehicle_msgs/msg/steering_wheel_status_stamped.hpp>
 #include <tier4_vehicle_msgs/msg/vehicle_emergency_stamped.hpp>
 #include <tier4_vehicle_msgs/srv/control_mode_request.hpp>
-#include <tier4_vehicle_msgs/msg/control_mode.hpp>
 
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>

@@ -213,14 +213,14 @@ void PacmodInterface::onControlModeRequest(
   const tier4_vehicle_msgs::srv::ControlModeRequest::Request::SharedPtr request,
   const tier4_vehicle_msgs::srv::ControlModeRequest::Response::SharedPtr response)
 {
-  if (request->mode.data == tier4_vehicle_msgs::msg::ControlMode::AUTO){
+  if (request->mode.data == tier4_vehicle_msgs::msg::ControlMode::AUTO) {
     engage_cmd_ = true;
     is_clear_override_needed_ = true;
     response->success = true;
     return;
   }
 
-  if (request->mode.data == tier4_vehicle_msgs::msg::ControlMode::MANUAL){
+  if (request->mode.data == tier4_vehicle_msgs::msg::ControlMode::MANUAL) {
     engage_cmd_ = false;
     is_clear_override_needed_ = true;
     response->success = true;
