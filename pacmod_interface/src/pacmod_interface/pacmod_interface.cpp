@@ -376,7 +376,7 @@ void PacmodInterface::publishCommands()
   /* calculate desired steering wheel */
   double adaptive_gear_ratio = calculateVariableGearRatio(current_velocity, current_steer_wheel);
   double desired_steer_wheel =
-    (control_cmd_ptr_->lateral.steering_tire_angle + steering_offset_) * adaptive_gear_ratio;
+    (control_cmd_ptr_->lateral.steering_tire_angle - steering_offset_) * adaptive_gear_ratio;
   desired_steer_wheel =
     std::min(std::max(desired_steer_wheel, -max_steering_wheel_), max_steering_wheel_);
 
