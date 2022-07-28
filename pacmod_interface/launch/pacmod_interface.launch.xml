@@ -10,6 +10,7 @@
   <node pkg="pacmod_interface" exec="pacmod_interface" name="pacmod_interface" output="screen">
     <param from="$(var pacmod_param_path)"/>
     <param from="$(var vehicle_info_param_file)"/>
+    <remap from="input/control_mode_request" to="/control/control_mode_request"/>
   </node>
 
   <!-- pacmod diagnostics publisher -->
