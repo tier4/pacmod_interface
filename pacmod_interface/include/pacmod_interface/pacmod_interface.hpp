@@ -30,6 +30,7 @@
 #include <autoware_auto_vehicle_msgs/msg/turn_indicators_command.hpp>
 #include <autoware_auto_vehicle_msgs/msg/turn_indicators_report.hpp>
 #include <autoware_auto_vehicle_msgs/msg/velocity_report.hpp>
+#include <autoware_auto_vehicle_msgs/srv/control_mode_command.hpp>
 #include <pacmod3_msgs/msg/global_rpt.hpp>
 #include <pacmod3_msgs/msg/steering_cmd.hpp>
 #include <pacmod3_msgs/msg/system_cmd_float.hpp>
@@ -41,10 +42,8 @@
 #include <tier4_external_api_msgs/srv/set_door.hpp>
 #include <tier4_vehicle_msgs/msg/actuation_command_stamped.hpp>
 #include <tier4_vehicle_msgs/msg/actuation_status_stamped.hpp>
-#include <tier4_vehicle_msgs/msg/control_mode.hpp>
 #include <tier4_vehicle_msgs/msg/steering_wheel_status_stamped.hpp>
 #include <tier4_vehicle_msgs/msg/vehicle_emergency_stamped.hpp>
-#include <tier4_vehicle_msgs/srv/control_mode_request.hpp>
 
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -63,6 +62,7 @@ public:
   using ActuationCommandStamped = tier4_vehicle_msgs::msg::ActuationCommandStamped;
   using ActuationStatusStamped = tier4_vehicle_msgs::msg::ActuationStatusStamped;
   using SteeringWheelStatusStamped = tier4_vehicle_msgs::msg::SteeringWheelStatusStamped;
+  using ControlModeCommand = autoware_auto_vehicle_msgs::srv::ControlModeCommand;
   PacmodInterface();
 
 private:
@@ -164,7 +164,7 @@ private:
 
   // Service
   tier4_api_utils::Service<tier4_external_api_msgs::srv::SetDoor>::SharedPtr srv_;
-  rclcpp::Service<tier4_vehicle_msgs::srv::ControlModeRequest>::SharedPtr control_mode_server_;
+  rclcpp::Service<ControlModeCommand>::SharedPtr control_mode_server_;
 
   /* input values */
   ActuationCommandStamped::ConstSharedPtr actuation_cmd_ptr_;
@@ -242,8 +242,8 @@ private:
   tier4_api_msgs::msg::DoorStatus toAutowareDoorStatusMsg(
     const pacmod3_msgs::msg::SystemRptInt & msg_ptr);
   void onControlModeRequest(
-    const tier4_vehicle_msgs::srv::ControlModeRequest::Request::SharedPtr request,
-    const tier4_vehicle_msgs::srv::ControlModeRequest::Response::SharedPtr response);
+    const ControlModeCommand::Request::SharedPtr request,
+    const ControlModeCommand::Response::SharedPtr response);
 };
 
 #endif  // PACMOD_INTERFACE__PACMOD_INTERFACE_HPP_
