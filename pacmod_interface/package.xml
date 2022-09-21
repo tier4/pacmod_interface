@@ -4,7 +4,7 @@
   <name>pacmod_interface</name>
   <version>0.1.0</version>
   <description>AutonomouStuff pacmod interface as a ROS 2 node</description>
-  <maintainer email="aohsato@gmail.com">Akihito Ohsato</maintainer>
+  <maintainer email="tomoya.kimura@tier4.jp">Tomoya Kimura</maintainer>
   <license>Apache License 2.0</license>
 
   <author email="aohsato@gmail.com">Akihito Ohsato</author>
