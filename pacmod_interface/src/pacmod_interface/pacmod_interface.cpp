@@ -107,19 +107,16 @@ PacmodInterface::PacmodInterface()
     this, "/pacmod/turn_rpt");
   global_rpt_sub_ = std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::GlobalRpt>>(
     this, "/pacmod/global_rpt");
-  rear_door_rpt_sub_ =
-    std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>>(
-      this, "/pacmod/rear_pass_door_rpt");
 
   pacmod_feedbacks_sync_ =
     std::make_unique<message_filters::Synchronizer<PacmodFeedbacksSyncPolicy>>(
       PacmodFeedbacksSyncPolicy(10), *steer_wheel_rpt_sub_, *wheel_speed_rpt_sub_, *accel_rpt_sub_,
-      *brake_rpt_sub_, *shift_rpt_sub_, *turn_rpt_sub_, *global_rpt_sub_, *rear_door_rpt_sub_);
+      *brake_rpt_sub_, *shift_rpt_sub_, *turn_rpt_sub_, *global_rpt_sub_);
 
   pacmod_feedbacks_sync_->registerCallback(std::bind(
     &PacmodInterface::callbackPacmodRpt, this, std::placeholders::_1, std::placeholders::_2,
     std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6,
-    std::placeholders::_7, std::placeholders::_8));
+    std::placeholders::_7));
 
   /* publisher */
   // To pacmod
@@ -133,8 +130,6 @@ PacmodInterface::PacmodInterface()
     create_publisher<pacmod3_msgs::msg::SystemCmdInt>("/pacmod/shift_cmd", rclcpp::QoS{1});
   turn_cmd_pub_ =
     create_publisher<pacmod3_msgs::msg::SystemCmdInt>("/pacmod/turn_cmd", rclcpp::QoS{1});
-  door_cmd_pub_ =
-    create_publisher<pacmod3_msgs::msg::SystemCmdInt>("/pacmod/rear_pass_door_cmd", rclcpp::QoS{1});
   raw_steer_cmd_pub_ = create_publisher<pacmod3_msgs::msg::SteeringCmd>(
     "/pacmod/raw_steer_cmd", rclcpp::QoS{1});  // only for debug
 
@@ -156,15 +151,6 @@ PacmodInterface::PacmodInterface()
     create_publisher<ActuationStatusStamped>("/vehicle/status/actuation_status", 1);
   steering_wheel_status_pub_ =
     create_publisher<SteeringWheelStatusStamped>("/vehicle/status/steering_wheel_status", 1);
-  door_status_pub_ =
-    create_publisher<tier4_api_msgs::msg::DoorStatus>("/vehicle/status/door_status", 1);
-
-  /* service */
-  //  From autoware
-  tier4_api_utils::ServiceProxyNodeInterface proxy(this);
-  srv_ = proxy.create_service<tier4_external_api_msgs::srv::SetDoor>(
-    "/api/vehicle/set/door",
-    std::bind(&PacmodInterface::setDoor, this, std::placeholders::_1, std::placeholders::_2));
 
   // Timer
   const auto period_ns = rclcpp::Rate(loop_rate_).period();
@@ -239,8 +225,7 @@ void PacmodInterface::callbackPacmodRpt(
   const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr brake_rpt,
   const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr shift_rpt,
   const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr turn_rpt,
-  const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt,
-  const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr rear_door_rpt)
+  const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt)
 {
   is_pacmod_rpt_received_ = true;
   steer_wheel_rpt_ptr_ = steer_wheel_rpt;
@@ -343,11 +328,6 @@ void PacmodInterface::callbackPacmodRpt(
     hazard_msg.stamp = header.stamp;
     hazard_msg.report = toAutowareHazardLightsReport(*turn_rpt);
     hazard_lights_status_pub_->publish(hazard_msg);
-  }
-
-  /* publish current door status */
-  {
-    door_status_pub_->publish(toAutowareDoorStatusMsg(*rear_door_rpt));
   }
 }
 
@@ -720,79 +700,4 @@ double PacmodInterface::steerWheelRateLimiter(
   const double limited_steer_cmd =
     prev_steer_cmd + std::min(std::max(-max_dsteer, dsteer), max_dsteer);
   return limited_steer_cmd;
-}
-
-pacmod3_msgs::msg::SystemCmdInt PacmodInterface::createClearOverrideDoorCommand()
-{
-  pacmod3_msgs::msg::SystemCmdInt door_cmd;
-  door_cmd.header.frame_id = "base_link";
-  door_cmd.header.stamp = this->now();
-  door_cmd.clear_override = true;
-  return door_cmd;
-}
-
-pacmod3_msgs::msg::SystemCmdInt PacmodInterface::createDoorCommand(const bool open)
-{
-  pacmod3_msgs::msg::SystemCmdInt door_cmd;
-  door_cmd.header.frame_id = "base_link";
-  door_cmd.header.stamp = this->now();
-  door_cmd.enable = true;
-
-  if (open) {
-    door_cmd.command = pacmod3_msgs::msg::SystemCmdInt::DOOR_OPEN;
-  } else {
-    door_cmd.command = pacmod3_msgs::msg::SystemCmdInt::DOOR_CLOSE;
-  }
-  return door_cmd;
-}
-
-void PacmodInterface::setDoor(
-  const tier4_external_api_msgs::srv::SetDoor::Request::SharedPtr request,
-  const tier4_external_api_msgs::srv::SetDoor::Response::SharedPtr response)
-{
-  if (!engage_cmd_) {
-    // when the vehicle mode is manual, ignore the request.
-    response->status.code = tier4_external_api_msgs::msg::ResponseStatus::IGNORED;
-    response->status.message = "Current vehicle mode is manual. The request is ignored.";
-    return;
-  }
-
-  // open/close the door
-  door_cmd_pub_->publish(createClearOverrideDoorCommand());
-  rclcpp::Rate(10.0).sleep();  // avoid message loss
-  door_cmd_pub_->publish(createDoorCommand(request->open));
-  response->status.code = tier4_external_api_msgs::msg::ResponseStatus::SUCCESS;
-
-  if (request->open) {
-    // open the door
-    response->status.message = "Success to open the door.";
-  } else {
-    // close the door
-    response->status.message = "Success to close the door.";
-  }
-}
-
-tier4_api_msgs::msg::DoorStatus PacmodInterface::toAutowareDoorStatusMsg(
-  const pacmod3_msgs::msg::SystemRptInt & msg_ptr)
-{
-  using pacmod3_msgs::msg::SystemRptInt;
-  using tier4_api_msgs::msg::DoorStatus;
-  DoorStatus door_status;
-
-  door_status.status = DoorStatus::UNKNOWN;
-
-  if (msg_ptr.command == SystemRptInt::DOOR_CLOSE && msg_ptr.output == SystemRptInt::DOOR_OPEN) {
-    // do not used (command & output are always the same value)
-    door_status.status = DoorStatus::DOOR_CLOSING;
-  } else if (  // NOLINT
-    msg_ptr.command == SystemRptInt::DOOR_OPEN && msg_ptr.output == SystemRptInt::DOOR_CLOSE) {
-    // do not used (command & output are always the same value)
-    door_status.status = DoorStatus::DOOR_OPENING;
-  } else if (msg_ptr.output == SystemRptInt::DOOR_CLOSE) {
-    door_status.status = DoorStatus::DOOR_CLOSED;
-  } else if (msg_ptr.output == SystemRptInt::DOOR_OPEN) {
-    door_status.status = DoorStatus::DOOR_OPENED;
-  }
-
-  return door_status;
 }
