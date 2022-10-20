@@ -86,7 +86,7 @@ PacmodInterface::PacmodInterface()
   emergency_sub_ = create_subscription<tier4_vehicle_msgs::msg::VehicleEmergencyStamped>(
     "/control/command/emergency_cmd", 1,
     std::bind(&PacmodInterface::callbackEmergencyCmd, this, _1));
-  control_mode_server_ = create_service<tier4_vehicle_msgs::srv::ControlModeRequest>(
+  control_mode_server_ = create_service<ControlModeCommand>(
     "input/control_mode_request", std::bind(&PacmodInterface::onControlModeRequest, this, _1, _2));
 
   // From pacmod
@@ -210,17 +210,17 @@ void PacmodInterface::callbackHazardLightsCommand(
 }
 
 void PacmodInterface::onControlModeRequest(
-  const tier4_vehicle_msgs::srv::ControlModeRequest::Request::SharedPtr request,
-  const tier4_vehicle_msgs::srv::ControlModeRequest::Response::SharedPtr response)
+  const ControlModeCommand::Request::SharedPtr request,
+  const ControlModeCommand::Response::SharedPtr response)
 {
-  if (request->mode.data == tier4_vehicle_msgs::msg::ControlMode::AUTO) {
+  if (request->mode == ControlModeCommand::Request::AUTONOMOUS) {
     engage_cmd_ = true;
     is_clear_override_needed_ = true;
     response->success = true;
     return;
   }
 
-  if (request->mode.data == tier4_vehicle_msgs::msg::ControlMode::MANUAL) {
+  if (request->mode == ControlModeCommand::Request::MANUAL) {
     engage_cmd_ = false;
     is_clear_override_needed_ = true;
     response->success = true;
