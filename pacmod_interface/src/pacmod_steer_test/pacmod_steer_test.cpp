@@ -234,7 +234,7 @@ void PacmodSteerTest::publishCommands()
     pacmod3_msgs::msg::SystemCmdFloat accel_cmd;
     accel_cmd.header.frame_id = base_frame_id_;
     accel_cmd.header.stamp = current_time;
-    accel_cmd.enable = engage_cmd_;
+    accel_cmd.enable = clear_override ? false : engage_cmd_;
     accel_cmd.ignore_overrides = false;
     accel_cmd.clear_override = clear_override;
     accel_cmd.command = getAccel();
@@ -246,7 +246,7 @@ void PacmodSteerTest::publishCommands()
     pacmod3_msgs::msg::SystemCmdFloat brake_cmd;
     brake_cmd.header.frame_id = base_frame_id_;
     brake_cmd.header.stamp = current_time;
-    brake_cmd.enable = engage_cmd_;
+    brake_cmd.enable = clear_override ? false : engage_cmd_;
     brake_cmd.ignore_overrides = false;
     brake_cmd.clear_override = clear_override;
     brake_cmd.command = getBrake();
@@ -258,7 +258,7 @@ void PacmodSteerTest::publishCommands()
     pacmod3_msgs::msg::SteeringCmd steer_cmd;
     steer_cmd.header.frame_id = base_frame_id_;
     steer_cmd.header.stamp = current_time;
-    steer_cmd.enable = engage_cmd_;
+    steer_cmd.enable = clear_override ? false : engage_cmd_;
     steer_cmd.ignore_overrides = false;
     steer_cmd.clear_override = clear_override;
     steer_cmd.command = testSteerCommand();  // desired_steer_wheel;
@@ -271,18 +271,18 @@ void PacmodSteerTest::publishCommands()
     pacmod3_msgs::msg::SystemCmdInt shift_cmd;
     shift_cmd.header.frame_id = base_frame_id_;
     shift_cmd.header.stamp = current_time;
-    shift_cmd.enable = engage_cmd_;
+    shift_cmd.enable = clear_override ? false : engage_cmd_;
     shift_cmd.ignore_overrides = false;
     shift_cmd.clear_override = clear_override;
     shift_cmd.command = pacmod3_msgs::msg::SystemCmdInt::SHIFT_FORWARD;  // always drive shift
     shift_cmd_pub_->publish(shift_cmd);
   }
 
-  /* publish shift cmd */
+  /* publish turn cmd */
   pacmod3_msgs::msg::SystemCmdInt turn_cmd;
   turn_cmd.header.frame_id = base_frame_id_;
   turn_cmd.header.stamp = current_time;
-  turn_cmd.enable = engage_cmd_;
+  turn_cmd.enable = clear_override ? false : engage_cmd_;
   turn_cmd.ignore_overrides = false;
   turn_cmd.clear_override = clear_override;
   turn_cmd.command = pacmod3_msgs::msg::SystemCmdInt::TURN_HAZARDS;  // for safety
