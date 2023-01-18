@@ -142,7 +142,6 @@ private:
   double vgr_coef_c_;          // variable gear ratio coeffs
   double accel_pedal_offset_;  // offset of accel pedal value
   double brake_pedal_offset_;  // offset of brake pedal value
-  double speed_scale_factor_;  // scale factor of speed
 
   double emergency_brake_;              // brake command when emergency [m/s^2]
   double max_throttle_;                 // max throttle [0~1]
