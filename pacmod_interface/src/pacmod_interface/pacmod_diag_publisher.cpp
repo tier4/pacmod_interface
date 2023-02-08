@@ -37,7 +37,8 @@ PacmodDiagPublisher::PacmodDiagPublisher()
 
   /* register subscribers */
   can_sub_ = create_subscription<can_msgs::msg::Frame>(
-    "/pacmod/can_tx", 1, std::bind(&PacmodDiagPublisher::callbackCan, this, std::placeholders::_1));
+    "/pacmod/from_can_bus", 1,
+    std::bind(&PacmodDiagPublisher::callbackCan, this, std::placeholders::_1));
 
   steer_wheel_rpt_sub_ =
     std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptFloat>>(
