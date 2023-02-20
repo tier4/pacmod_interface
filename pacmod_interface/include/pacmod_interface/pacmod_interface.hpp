@@ -69,8 +69,7 @@ private:
   typedef message_filters::sync_policies::ApproximateTime<
     pacmod3_msgs::msg::SystemRptFloat, pacmod3_msgs::msg::WheelSpeedRpt,
     pacmod3_msgs::msg::SystemRptFloat, pacmod3_msgs::msg::SystemRptFloat,
-    pacmod3_msgs::msg::SystemRptInt, pacmod3_msgs::msg::SystemRptInt, pacmod3_msgs::msg::GlobalRpt,
-    pacmod3_msgs::msg::SystemRptInt>
+    pacmod3_msgs::msg::SystemRptInt, pacmod3_msgs::msg::SystemRptInt, pacmod3_msgs::msg::GlobalRpt>
     PacmodFeedbacksSyncPolicy;
 
   /* subscribers */
@@ -86,6 +85,8 @@ private:
   rclcpp::Subscription<tier4_vehicle_msgs::msg::VehicleEmergencyStamped>::SharedPtr emergency_sub_;
 
   // From Pacmod
+  rclcpp::Subscription<pacmod3_msgs::msg::SystemRptInt>::SharedPtr rear_door_rpt_sub_;
+
   std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptFloat>>
     steer_wheel_rpt_sub_;
   std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::WheelSpeedRpt>>
@@ -95,7 +96,6 @@ private:
   std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>> shift_rpt_sub_;
   std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>> turn_rpt_sub_;
   std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::GlobalRpt>> global_rpt_sub_;
-  std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>> rear_door_rpt_sub_;
   std::unique_ptr<message_filters::Synchronizer<PacmodFeedbacksSyncPolicy>> pacmod_feedbacks_sync_;
 
   /* publishers */
@@ -201,6 +201,7 @@ private:
   void callbackHazardLightsCommand(
     const autoware_auto_vehicle_msgs::msg::HazardLightsCommand::ConstSharedPtr msg);
   void callbackEngage(const autoware_auto_vehicle_msgs::msg::Engage::ConstSharedPtr msg);
+  void callbackRearDoor(const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr rear_door_rpt);
   void callbackPacmodRpt(
     const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr steer_wheel_rpt,
     const pacmod3_msgs::msg::WheelSpeedRpt::ConstSharedPtr wheel_speed_rpt,
@@ -208,8 +209,7 @@ private:
     const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr brake_rpt,
     const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr gear_cmd_rpt,
     const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr turn_rpt,
-    const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt,
-    const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr rear_door_rpt);
+    const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt);
 
   /*  functions */
   void publishCommands();

@@ -89,6 +89,8 @@ PacmodInterface::PacmodInterface()
     "input/control_mode_request", std::bind(&PacmodInterface::onControlModeRequest, this, _1, _2));
 
   // From pacmod
+  rear_door_rpt_sub_ = create_subscription<pacmod3_msgs::msg::SystemRptInt>(
+    "/pacmod/rear_pass_door_rpt", 1, std::bind(&PacmodInterface::callbackRearDoor, this, _1));
 
   steer_wheel_rpt_sub_ =
     std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptFloat>>(
@@ -106,19 +108,16 @@ PacmodInterface::PacmodInterface()
     this, "/pacmod/turn_rpt");
   global_rpt_sub_ = std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::GlobalRpt>>(
     this, "/pacmod/global_rpt");
-  rear_door_rpt_sub_ =
-    std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>>(
-      this, "/pacmod/rear_pass_door_rpt");
 
   pacmod_feedbacks_sync_ =
     std::make_unique<message_filters::Synchronizer<PacmodFeedbacksSyncPolicy>>(
       PacmodFeedbacksSyncPolicy(10), *steer_wheel_rpt_sub_, *wheel_speed_rpt_sub_, *accel_rpt_sub_,
-      *brake_rpt_sub_, *shift_rpt_sub_, *turn_rpt_sub_, *global_rpt_sub_, *rear_door_rpt_sub_);
+      *brake_rpt_sub_, *shift_rpt_sub_, *turn_rpt_sub_, *global_rpt_sub_);
 
   pacmod_feedbacks_sync_->registerCallback(std::bind(
     &PacmodInterface::callbackPacmodRpt, this, std::placeholders::_1, std::placeholders::_2,
     std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6,
-    std::placeholders::_7, std::placeholders::_8));
+    std::placeholders::_7));
 
   /* publisher */
   // To pacmod
@@ -231,6 +230,13 @@ void PacmodInterface::onControlModeRequest(
   return;
 }
 
+void PacmodInterface::callbackRearDoor(
+  const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr rear_door_rpt)
+{
+  /* publish current door status */
+  door_status_pub_->publish(toAutowareDoorStatusMsg(*rear_door_rpt));
+}
+
 void PacmodInterface::callbackPacmodRpt(
   const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr steer_wheel_rpt,
   const pacmod3_msgs::msg::WheelSpeedRpt::ConstSharedPtr wheel_speed_rpt,
@@ -238,8 +244,7 @@ void PacmodInterface::callbackPacmodRpt(
   const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr brake_rpt,
   const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr shift_rpt,
   const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr turn_rpt,
-  const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt,
-  const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr rear_door_rpt)
+  const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt)
 {
   is_pacmod_rpt_received_ = true;
   steer_wheel_rpt_ptr_ = steer_wheel_rpt;
@@ -342,11 +347,6 @@ void PacmodInterface::callbackPacmodRpt(
     hazard_msg.stamp = header.stamp;
     hazard_msg.report = toAutowareHazardLightsReport(*turn_rpt);
     hazard_lights_status_pub_->publish(hazard_msg);
-  }
-
-  /* publish current door status */
-  {
-    door_status_pub_->publish(toAutowareDoorStatusMsg(*rear_door_rpt));
   }
 }
 
