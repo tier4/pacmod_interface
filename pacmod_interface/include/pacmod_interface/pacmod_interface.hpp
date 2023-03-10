@@ -153,7 +153,9 @@ private:
   double steering_wheel_rate_stopped_;  // [rad/s]
   double low_vel_thresh_;               // [m/s]
 
-  bool enable_steering_rate_control_;  // use steering angle speed for command [rad/s]
+  bool enable_steering_rate_control_;   // use steering angle speed for command [rad/s]
+  bool need_separate_engage_sequence_;  // when you use a newer version of firmware than 3.3, it
+                                        // must be true
 
   double hazard_thresh_time_;
   int hazard_recover_count_ = 0;

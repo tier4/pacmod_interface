@@ -57,6 +57,10 @@ PacmodInterface::PacmodInterface()
 
   /* parameters for turn signal recovery */
   hazard_thresh_time_ = declare_parameter("hazard_thresh_time", 0.20);  // s
+
+  /* parameter for engage sequence */
+  need_separate_engage_sequence_ = declare_parameter("need_separate_engage_sequence", false);
+
   /* initialize */
   prev_steer_cmd_.header.stamp = this->now();
   prev_steer_cmd_.command = 0.0;
@@ -451,6 +455,8 @@ void PacmodInterface::publishCommands()
     }
   }
 
+  const auto & sep_engage = need_separate_engage_sequence_;
+
   /* publish accel cmd */
   {
     pacmod3_msgs::msg::SystemCmdFloat accel_cmd;
@@ -461,7 +467,7 @@ void PacmodInterface::publishCommands()
     1. Send a msg with clear override bit high and enable bit low.
     2. Send a msg after that, with clear override bit low, and enable bit high.
     */
-    accel_cmd.enable = clear_override ? false : engage_cmd_;
+    accel_cmd.enable = clear_override && sep_engage ? false : engage_cmd_;
     accel_cmd.ignore_overrides = false;
     accel_cmd.clear_override = clear_override;
     accel_cmd.command = std::max(0.0, std::min(desired_throttle, max_throttle_));
@@ -473,7 +479,7 @@ void PacmodInterface::publishCommands()
     pacmod3_msgs::msg::SystemCmdFloat brake_cmd;
     brake_cmd.header.frame_id = base_frame_id_;
     brake_cmd.header.stamp = current_time;
-    brake_cmd.enable = clear_override ? false : engage_cmd_;
+    brake_cmd.enable = clear_override && sep_engage ? false : engage_cmd_;
     brake_cmd.ignore_overrides = false;
     brake_cmd.clear_override = clear_override;
     brake_cmd.command = std::max(0.0, std::min(desired_brake, max_brake_));
@@ -485,7 +491,7 @@ void PacmodInterface::publishCommands()
     pacmod3_msgs::msg::SteeringCmd steer_cmd;
     steer_cmd.header.frame_id = base_frame_id_;
     steer_cmd.header.stamp = current_time;
-    steer_cmd.enable = clear_override ? false : engage_cmd_;
+    steer_cmd.enable = clear_override && sep_engage ? false : engage_cmd_;
     steer_cmd.ignore_overrides = false;
     steer_cmd.clear_override = clear_override;
     steer_cmd.rotation_rate = calcSteerWheelRateCmd(adaptive_gear_ratio);
@@ -501,7 +507,7 @@ void PacmodInterface::publishCommands()
     pacmod3_msgs::msg::SteeringCmd raw_steer_cmd;
     raw_steer_cmd.header.frame_id = base_frame_id_;
     raw_steer_cmd.header.stamp = current_time;
-    raw_steer_cmd.enable = clear_override ? false : engage_cmd_;
+    raw_steer_cmd.enable = clear_override && sep_engage ? false : engage_cmd_;
     raw_steer_cmd.ignore_overrides = false;
     raw_steer_cmd.clear_override = clear_override;
     raw_steer_cmd.command = desired_steer_wheel;
@@ -515,7 +521,7 @@ void PacmodInterface::publishCommands()
     pacmod3_msgs::msg::SystemCmdInt shift_cmd;
     shift_cmd.header.frame_id = base_frame_id_;
     shift_cmd.header.stamp = current_time;
-    shift_cmd.enable = clear_override ? false : engage_cmd_;
+    shift_cmd.enable = clear_override && sep_engage ? false : engage_cmd_;
     shift_cmd.ignore_overrides = false;
     shift_cmd.clear_override = clear_override;
     shift_cmd.command = desired_shift;
@@ -527,7 +533,7 @@ void PacmodInterface::publishCommands()
     pacmod3_msgs::msg::SystemCmdInt turn_cmd;
     turn_cmd.header.frame_id = base_frame_id_;
     turn_cmd.header.stamp = current_time;
-    turn_cmd.enable = clear_override ? false : engage_cmd_;
+    turn_cmd.enable = clear_override && sep_engage ? false : engage_cmd_;
     turn_cmd.ignore_overrides = false;
     turn_cmd.clear_override = clear_override;
     turn_cmd.command =
