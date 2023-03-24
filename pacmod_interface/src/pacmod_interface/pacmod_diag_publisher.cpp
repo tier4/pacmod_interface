@@ -307,7 +307,7 @@ bool PacmodDiagPublisher::checkBrakeFault()
 {
   const auto minimum_acc = getMinValue(acc_que_);
   const auto maximum_acc_cmd = std::max(getMaxValue(acc_cmd_que_), min_decel_);
-  if (maximum_acc_cmd < 0.0 && maximum_acc_cmd - minimum_acc < accel_diff_thresh_) {
+  if (maximum_acc_cmd < 0.0 && maximum_acc_cmd - minimum_acc < -accel_diff_thresh_) {
     // The vehicle deceleration is significantly lower than the deceleration command
     // Deceleration may be not working properly
     return true;
