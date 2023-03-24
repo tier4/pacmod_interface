@@ -18,7 +18,9 @@
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include <autoware_auto_control_msgs/msg/ackermann_control_command.hpp>
 #include <can_msgs/msg/frame.hpp>
+#include <geometry_msgs/msg/accel_with_covariance_stamped.hpp>
 #include <pacmod3_msgs/msg/global_rpt.hpp>
 #include <pacmod3_msgs/msg/steering_cmd.hpp>
 #include <pacmod3_msgs/msg/system_cmd_float.hpp>
@@ -36,6 +38,9 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
+
+using autoware_auto_control_msgs::msg::AckermannControlCommand;
+using geometry_msgs::msg::AccelWithCovarianceStamped;
 
 class PacmodDiagPublisher : public rclcpp::Node
 {
@@ -65,6 +70,10 @@ private:
   // From CAN
   rclcpp::Subscription<can_msgs::msg::Frame>::SharedPtr can_sub_;
 
+  // Accleration-related Topics
+  rclcpp::Subscription<AccelWithCovarianceStamped>::SharedPtr current_acc_sub_;
+  rclcpp::Subscription<AckermannControlCommand>::SharedPtr control_cmd_sub_;
+
   /* ros parameters */
   double can_timeout_sec_;
   double pacmod3_msgs_timeout_sec_;
@@ -84,6 +93,14 @@ private:
   // Diagnostic Updater
   std::shared_ptr<diagnostic_updater::Updater> updater_ptr_;
 
+  // Accleration
+  std::vector<std::pair<builtin_interfaces::msg::Time, double>> acc_que_;
+  std::vector<std::pair<builtin_interfaces::msg::Time, double>> acc_cmd_que_;
+  double accel_store_time_;
+  double accel_diff_thresh_;
+  double min_decel_;
+  double max_accel_;
+
   /* callbacks */
   void callbackPacmodRpt(
     const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr steer_wheel_rpt,
@@ -96,9 +113,24 @@ private:
 
   void callbackCan(const can_msgs::msg::Frame::ConstSharedPtr can);
 
+  void callbackAccel(const AccelWithCovarianceStamped::ConstSharedPtr accel);
+  void callbackControlCmd(const AckermannControlCommand::ConstSharedPtr control_cmd);
+
   /* functions */
   void checkPacmodMsgs(diagnostic_updater::DiagnosticStatusWrapper & stat);
+  void checkPacmodAccelBrake(diagnostic_updater::DiagnosticStatusWrapper & stat);
   std::string addMsg(const std::string & original_msg, const std::string & additional_msg);
+
+  void addValueToQue(
+    std::vector<std::pair<builtin_interfaces::msg::Time, double>> & que, const double value,
+    const builtin_interfaces::msg::Time timestamp, const double store_time);
+  bool checkEnoughDataStored(
+    const std::vector<std::pair<builtin_interfaces::msg::Time, double>> que,
+    const double store_time);
+  double getMinValue(std::vector<std::pair<builtin_interfaces::msg::Time, double>> que);
+  double getMaxValue(std::vector<std::pair<builtin_interfaces::msg::Time, double>> que);
+  bool checkAccelFault();
+  bool checkBrakeFault();
 
   bool isTimeoutCanMsgs();
   bool isTimeoutPacmodMsgs();
