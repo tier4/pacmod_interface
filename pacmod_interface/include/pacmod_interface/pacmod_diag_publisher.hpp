@@ -21,6 +21,7 @@
 #include <autoware_auto_control_msgs/msg/ackermann_control_command.hpp>
 #include <can_msgs/msg/frame.hpp>
 #include <geometry_msgs/msg/accel_with_covariance_stamped.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 #include <pacmod3_msgs/msg/global_rpt.hpp>
 #include <pacmod3_msgs/msg/steering_cmd.hpp>
 #include <pacmod3_msgs/msg/system_cmd_float.hpp>
@@ -41,6 +42,7 @@
 
 using autoware_auto_control_msgs::msg::AckermannControlCommand;
 using geometry_msgs::msg::AccelWithCovarianceStamped;
+using nav_msgs::msg::Odometry;
 
 class PacmodDiagPublisher : public rclcpp::Node
 {
@@ -73,6 +75,7 @@ private:
   // Accleration-related Topics
   rclcpp::Subscription<AccelWithCovarianceStamped>::SharedPtr current_acc_sub_;
   rclcpp::Subscription<AckermannControlCommand>::SharedPtr control_cmd_sub_;
+  rclcpp::Subscription<Odometry>::SharedPtr odom_sub_;
 
   /* ros parameters */
   double can_timeout_sec_;
@@ -89,17 +92,19 @@ private:
   pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr shift_rpt_ptr_;
   pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt_ptr_;
   pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr turn_rpt_ptr_;
+  Odometry::ConstSharedPtr odom_ptr_;
 
   // Diagnostic Updater
   std::shared_ptr<diagnostic_updater::Updater> updater_ptr_;
 
-  // Accleration
+  // Acceleration
   std::vector<std::pair<builtin_interfaces::msg::Time, double>> acc_que_;
   std::vector<std::pair<builtin_interfaces::msg::Time, double>> acc_cmd_que_;
   double accel_store_time_;
   double accel_diff_thresh_;
   double min_decel_;
   double max_accel_;
+  double accel_brake_fault_check_min_velocity_;
 
   /* callbacks */
   void callbackPacmodRpt(
@@ -114,6 +119,7 @@ private:
   void callbackCan(const can_msgs::msg::Frame::ConstSharedPtr can);
 
   void callbackAccel(const AccelWithCovarianceStamped::ConstSharedPtr accel);
+  void callbackOdometry(const Odometry::SharedPtr odom);
   void callbackControlCmd(const AckermannControlCommand::ConstSharedPtr control_cmd);
 
   /* functions */

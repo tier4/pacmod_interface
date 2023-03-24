@@ -34,6 +34,8 @@ PacmodDiagPublisher::PacmodDiagPublisher()
   accel_diff_thresh_ = declare_parameter("accel_diff_thresh", 1.0);
   min_decel_ = declare_parameter("min_decel", -3.0);
   max_accel_ = declare_parameter("max_accel", 3.0);
+  accel_brake_fault_check_min_velocity_ =
+    declare_parameter("accel_brake_fault_check_min_velocity", 1.39);
 
   /* Diagnostic Updater */
   updater_ptr_ = std::make_shared<diagnostic_updater::Updater>(this, 1.0 / update_rate);
@@ -76,11 +78,14 @@ PacmodDiagPublisher::PacmodDiagPublisher()
 
   /* acceleration-related topics */
   current_acc_sub_ = create_subscription<AccelWithCovarianceStamped>(
-    "/pacmod/from_can_bus", 1,
+    "/localization/acceleration", 1,
     std::bind(&PacmodDiagPublisher::callbackAccel, this, std::placeholders::_1));
   control_cmd_sub_ = create_subscription<AckermannControlCommand>(
-    "/pacmod/from_can_bus", 1,
+    "/control/command/control_cmd", 1,
     std::bind(&PacmodDiagPublisher::callbackControlCmd, this, std::placeholders::_1));
+  odom_sub_ = create_subscription<Odometry>(
+    "/localization/kinematic_state", 1,
+    std::bind(&PacmodDiagPublisher::callbackOdometry, this, std::placeholders::_1));
 }
 
 void PacmodDiagPublisher::callbackCan(
@@ -120,6 +125,8 @@ void PacmodDiagPublisher::callbackControlCmd(
   addValueToQue(
     acc_cmd_que_, control_cmd->longitudinal.acceleration, control_cmd->stamp, accel_store_time_);
 }
+
+void PacmodDiagPublisher::callbackOdometry(const Odometry::SharedPtr odom) { odom_ptr_ = odom; }
 
 void PacmodDiagPublisher::checkPacmodMsgs(diagnostic_updater::DiagnosticStatusWrapper & stat)
 {
@@ -178,15 +185,14 @@ void PacmodDiagPublisher::checkPacmodAccelBrake(diagnostic_updater::DiagnosticSt
   int8_t level = DiagStatus::OK;
   std::string msg = "OK";
 
-  if (!global_rpt_ptr_ or !steer_wheel_rpt_ptr_ or !accel_rpt_ptr_ or brake_rpt_ptr_) {
-    // does not received pacmod message yet.
+  if (!(global_rpt_ptr_ && steer_wheel_rpt_ptr_ && accel_rpt_ptr_ && brake_rpt_ptr_ && odom_ptr_)) {
+    // does not received messages yet.
     stat.summary(level, msg);
     return;
   }
 
-  if (
-    !global_rpt_ptr_->enabled or steer_wheel_rpt_ptr_->enabled or !accel_rpt_ptr_->enabled or
-    !brake_rpt_ptr_->enabled) {
+  if (!(global_rpt_ptr_->enabled && steer_wheel_rpt_ptr_->enabled && accel_rpt_ptr_->enabled &&
+        brake_rpt_ptr_->enabled)) {
     // manual mode (not autonomous mode )
     stat.summary(level, msg);
     return;
@@ -225,6 +231,25 @@ void PacmodDiagPublisher::addValueToQue(
   std::vector<std::pair<builtin_interfaces::msg::Time, double>> & que, const double value,
   const builtin_interfaces::msg::Time timestamp, const double store_time)
 {
+  if (!(global_rpt_ptr_ && steer_wheel_rpt_ptr_ && accel_rpt_ptr_ && brake_rpt_ptr_ && odom_ptr_)) {
+    // if the data is not ready, clear que.
+    que.clear();
+    return;
+  }
+
+  if (!(global_rpt_ptr_->enabled && steer_wheel_rpt_ptr_->enabled && accel_rpt_ptr_->enabled &&
+        brake_rpt_ptr_->enabled)) {
+    // if the mode is manual (not autonomous), clear que.
+    que.clear();
+    return;
+  }
+
+  if (odom_ptr_->twist.twist.linear.x < accel_brake_fault_check_min_velocity_) {
+    // When the vehicle is low speed or moving backward, clear que.
+    que.clear();
+    return;
+  }
+
   que.emplace_back(std::pair<builtin_interfaces::msg::Time, double>(timestamp, value));
 
   if (que.size() < 2) return;

@@ -19,6 +19,8 @@
   <depend>diagnostic_updater</depend>
   <depend>message_filters</depend>
   <depend>pacmod3_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>tier4_api_msgs</depend>
