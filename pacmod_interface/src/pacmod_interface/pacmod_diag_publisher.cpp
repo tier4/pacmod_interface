@@ -41,7 +41,7 @@ PacmodDiagPublisher::PacmodDiagPublisher()
   updater_ptr_ = std::make_shared<diagnostic_updater::Updater>(this, 1.0 / update_rate);
   updater_ptr_->setHardwareID("pacmod_checker");
   updater_ptr_->add("pacmod_checker", this, &PacmodDiagPublisher::checkPacmodMsgs);
-  updater_ptr_->add("pacmod_brake", this, &PacmodDiagPublisher::checkPacmodAccelBrake);
+  updater_ptr_->add("pacmod_accel_brake_fault", this, &PacmodDiagPublisher::checkPacmodAccelBrake);
 
   /* register subscribers */
   can_sub_ = create_subscription<can_msgs::msg::Frame>(
