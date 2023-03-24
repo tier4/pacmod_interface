@@ -4,7 +4,6 @@
   <arg name="pacmod_extra_param_path" default="$(find-pkg-share pacmod_interface)/config/pacmod_extra.param.yaml"/>
   <arg name="pacmod_diag_publisher_param_path" default="$(find-pkg-share pacmod_interface)/config/pacmod_diag_publisher.param.yaml"/>
 
-
   <!-- vehicle info -->
   <arg name="vehicle_info_param_file" default="$(find-pkg-share vehicle_info_util)/config/vehicle_info.param.yaml"/>
 
