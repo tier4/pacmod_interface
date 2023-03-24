@@ -2,6 +2,8 @@
 <launch>
   <arg name="pacmod_param_path" default="$(find-pkg-share pacmod_interface)/config/pacmod.param.yaml"/>
   <arg name="pacmod_extra_param_path" default="$(find-pkg-share pacmod_interface)/config/pacmod_extra.param.yaml"/>
+  <arg name="pacmod_diag_publisher_param_path" default="$(find-pkg-share pacmod_interface)/config/pacmod_diag_publisher.param.yaml"/>
+
 
   <!-- vehicle info -->
   <arg name="vehicle_info_param_file" default="$(find-pkg-share vehicle_info_util)/config/vehicle_info.param.yaml"/>
@@ -14,7 +16,9 @@
   </node>
 
   <!-- pacmod diagnostics publisher -->
-  <node pkg="pacmod_interface" exec="pacmod_diag_publisher" name="pacmod_diag_publisher" output="screen"/>
+  <node pkg="pacmod_interface" exec="pacmod_diag_publisher" name="pacmod_diag_publisher" output="screen">
+    <param from="$(var pacmod_diag_publisher_param_path)"/>
+  </node>
 
   <!-- pacmod additional parameter changer -->
   <node pkg="pacmod_interface" exec="pacmod_dynamic_parameter_changer" name="pacmod_dynamic_parameter_changer" output="screen">
