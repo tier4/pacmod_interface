@@ -72,7 +72,7 @@ private:
   // From CAN
   rclcpp::Subscription<can_msgs::msg::Frame>::SharedPtr can_sub_;
 
-  // Accleration-related Topics
+  // Acceleration-related Topics
   rclcpp::Subscription<AccelWithCovarianceStamped>::SharedPtr current_acc_sub_;
   rclcpp::Subscription<AckermannControlCommand>::SharedPtr control_cmd_sub_;
   rclcpp::Subscription<Odometry>::SharedPtr odom_sub_;
