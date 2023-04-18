@@ -39,6 +39,8 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 using autoware_auto_control_msgs::msg::AckermannControlCommand;
 using geometry_msgs::msg::AccelWithCovarianceStamped;

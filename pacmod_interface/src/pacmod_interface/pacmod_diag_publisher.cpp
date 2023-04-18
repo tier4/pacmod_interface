@@ -199,7 +199,7 @@ void PacmodDiagPublisher::checkPacmodAccelBrake(diagnostic_updater::DiagnosticSt
   }
 
   if (
-    !checkEnoughDataStored(acc_que_, accel_store_time_) or
+    !checkEnoughDataStored(acc_que_, accel_store_time_) ||
     !checkEnoughDataStored(acc_cmd_que_, accel_store_time_)) {
     // no enough data
     stat.summary(level, msg);
