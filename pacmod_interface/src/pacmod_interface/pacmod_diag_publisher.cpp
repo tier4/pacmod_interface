@@ -30,16 +30,25 @@ PacmodDiagPublisher::PacmodDiagPublisher()
   pacmod3_msgs_timeout_sec_ = declare_parameter("pacmod_msg_timeout_sec", 10.0);
   const double update_rate = declare_parameter("update_rate", 10.0);
 
+  accel_store_time_ = declare_parameter("accel_store_time", 1.0);
+  accel_diff_thresh_ = declare_parameter("accel_diff_thresh", 1.0);
+  min_decel_ = declare_parameter("min_decel", -3.0);
+  max_accel_ = declare_parameter("max_accel", 3.0);
+  accel_brake_fault_check_min_velocity_ =
+    declare_parameter("accel_brake_fault_check_min_velocity", 1.39);
+
   /* Diagnostic Updater */
   updater_ptr_ = std::make_shared<diagnostic_updater::Updater>(this, 1.0 / update_rate);
   updater_ptr_->setHardwareID("pacmod_checker");
   updater_ptr_->add("pacmod_checker", this, &PacmodDiagPublisher::checkPacmodMsgs);
+  updater_ptr_->add("pacmod_accel_brake_fault", this, &PacmodDiagPublisher::checkPacmodAccelBrake);
 
   /* register subscribers */
   can_sub_ = create_subscription<can_msgs::msg::Frame>(
     "/pacmod/from_can_bus", 1,
     std::bind(&PacmodDiagPublisher::callbackCan, this, std::placeholders::_1));
 
+  /* pacmod-related topics */
   steer_wheel_rpt_sub_ =
     std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptFloat>>(
       this, "/pacmod/steering_rpt");
@@ -66,6 +75,17 @@ PacmodDiagPublisher::PacmodDiagPublisher()
     &PacmodDiagPublisher::callbackPacmodRpt, this, std::placeholders::_1, std::placeholders::_2,
     std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6,
     std::placeholders::_7));
+
+  /* acceleration-related topics */
+  current_acc_sub_ = create_subscription<AccelWithCovarianceStamped>(
+    "/localization/acceleration", 1,
+    std::bind(&PacmodDiagPublisher::callbackAccel, this, std::placeholders::_1));
+  control_cmd_sub_ = create_subscription<AckermannControlCommand>(
+    "/control/command/control_cmd", 1,
+    std::bind(&PacmodDiagPublisher::callbackControlCmd, this, std::placeholders::_1));
+  odom_sub_ = create_subscription<Odometry>(
+    "/localization/kinematic_state", 1,
+    std::bind(&PacmodDiagPublisher::callbackOdometry, this, std::placeholders::_1));
 }
 
 void PacmodDiagPublisher::callbackCan(
@@ -93,6 +113,20 @@ void PacmodDiagPublisher::callbackPacmodRpt(
   turn_rpt_ptr_ = turn_rpt;
   is_pacmod_rpt_received_ = true;
 }
+
+void PacmodDiagPublisher::callbackAccel(const AccelWithCovarianceStamped::ConstSharedPtr accel)
+{
+  addValueToQue(acc_que_, accel->accel.accel.linear.x, accel->header.stamp, accel_store_time_);
+}
+
+void PacmodDiagPublisher::callbackControlCmd(
+  const AckermannControlCommand::ConstSharedPtr control_cmd)
+{
+  addValueToQue(
+    acc_cmd_que_, control_cmd->longitudinal.acceleration, control_cmd->stamp, accel_store_time_);
+}
+
+void PacmodDiagPublisher::callbackOdometry(const Odometry::SharedPtr odom) { odom_ptr_ = odom; }
 
 void PacmodDiagPublisher::checkPacmodMsgs(diagnostic_updater::DiagnosticStatusWrapper & stat)
 {
@@ -145,6 +179,44 @@ void PacmodDiagPublisher::checkPacmodMsgs(diagnostic_updater::DiagnosticStatusWr
   stat.summary(level, msg);
 }
 
+void PacmodDiagPublisher::checkPacmodAccelBrake(diagnostic_updater::DiagnosticStatusWrapper & stat)
+{
+  using DiagStatus = diagnostic_msgs::msg::DiagnosticStatus;
+  int8_t level = DiagStatus::OK;
+  std::string msg = "OK";
+
+  if (!(global_rpt_ptr_ && steer_wheel_rpt_ptr_ && accel_rpt_ptr_ && brake_rpt_ptr_ && odom_ptr_)) {
+    // does not received messages yet.
+    stat.summary(level, msg);
+    return;
+  }
+
+  if (!(global_rpt_ptr_->enabled && steer_wheel_rpt_ptr_->enabled && accel_rpt_ptr_->enabled &&
+        brake_rpt_ptr_->enabled)) {
+    // manual mode (not autonomous mode )
+    stat.summary(level, msg);
+    return;
+  }
+
+  if (
+    !checkEnoughDataStored(acc_que_, accel_store_time_) ||
+    !checkEnoughDataStored(acc_cmd_que_, accel_store_time_)) {
+    // no enough data
+    stat.summary(level, msg);
+    return;
+  }
+
+  if (checkBrakeFault()) {
+    level = DiagStatus::ERROR;
+    msg = addMsg(msg, "Pacmod Brake Fault. Not decelerating enough.");
+  } else if (checkAccelFault()) {
+    level = DiagStatus::ERROR;
+    msg = addMsg(msg, "Pacmod Accel Fault. Not accelerating enough.");
+  }
+
+  stat.summary(level, msg);
+}
+
 std::string PacmodDiagPublisher::addMsg(
   const std::string & original_msg, const std::string & additional_msg)
 {
@@ -153,6 +225,94 @@ std::string PacmodDiagPublisher::addMsg(
   }
 
   return original_msg + " ; " + additional_msg;
+}
+
+void PacmodDiagPublisher::addValueToQue(
+  std::vector<std::pair<builtin_interfaces::msg::Time, double>> & que, const double value,
+  const builtin_interfaces::msg::Time timestamp, const double store_time)
+{
+  if (!(global_rpt_ptr_ && steer_wheel_rpt_ptr_ && accel_rpt_ptr_ && brake_rpt_ptr_ && odom_ptr_)) {
+    // if the data is not ready, clear que.
+    que.clear();
+    return;
+  }
+
+  if (!(global_rpt_ptr_->enabled && steer_wheel_rpt_ptr_->enabled && accel_rpt_ptr_->enabled &&
+        brake_rpt_ptr_->enabled)) {
+    // if the mode is manual (not autonomous), clear que.
+    que.clear();
+    return;
+  }
+
+  if (odom_ptr_->twist.twist.linear.x < accel_brake_fault_check_min_velocity_) {
+    // When the vehicle is low speed or moving backward, clear que.
+    que.clear();
+    return;
+  }
+
+  que.emplace_back(std::pair<builtin_interfaces::msg::Time, double>(timestamp, value));
+
+  if (que.size() < 2) return;
+
+  // delete old data
+  const auto current_time = get_clock()->now();
+  if ((current_time - que.at(1).first).seconds() > store_time) {
+    que.erase(que.begin());
+  }
+}
+
+bool PacmodDiagPublisher::checkEnoughDataStored(
+  const std::vector<std::pair<builtin_interfaces::msg::Time, double>> que, const double store_time)
+{
+  if (que.empty()) {
+    // no data
+    return false;
+  }
+
+  const auto current_time = get_clock()->now();
+  const auto oldest_que_time = (current_time - que.front().first).seconds();
+  return (oldest_que_time > store_time);
+}
+
+double PacmodDiagPublisher::getMinValue(
+  std::vector<std::pair<builtin_interfaces::msg::Time, double>> que)
+{
+  auto it = std::min_element(
+    que.begin(), que.end(), [](const auto & a, const auto & b) { return a.second < b.second; });
+
+  return it->second;
+}
+
+double PacmodDiagPublisher::getMaxValue(
+  std::vector<std::pair<builtin_interfaces::msg::Time, double>> que)
+{
+  auto it = std::max_element(
+    que.begin(), que.end(), [](const auto & a, const auto & b) { return a.second < b.second; });
+  return it->second;
+}
+
+bool PacmodDiagPublisher::checkAccelFault()
+{
+  const auto maximum_acc = getMaxValue(acc_que_);
+  const auto minimum_acc_cmd = std::min(getMinValue(acc_cmd_que_), max_accel_);
+  if (minimum_acc_cmd > 0.0 && minimum_acc_cmd - maximum_acc > accel_diff_thresh_) {
+    // The vehicle acceleration is significantly lower than the acceleration command
+    // Acceleration may be not working properly
+    return true;
+  }
+  return false;
+}
+
+bool PacmodDiagPublisher::checkBrakeFault()
+{
+  const auto minimum_acc = getMinValue(acc_que_);
+  const auto maximum_acc_cmd = std::max(getMaxValue(acc_cmd_que_), min_decel_);
+  if (maximum_acc_cmd < 0.0 && maximum_acc_cmd - minimum_acc < -accel_diff_thresh_) {
+    // The vehicle deceleration is significantly lower than the deceleration command
+    // Deceleration may be not working properly
+    return true;
+  }
+  return false;
 }
 
 bool PacmodDiagPublisher::isTimeoutCanMsgs()

@@ -1,0 +1,10 @@
+/**:
+  ros__parameters:
+    can_timeout_sec: 10.0
+    pacmod_msg_timeout_sec: 10.0
+    update_rate: 10.0
+    accel_store_time: 1.0
+    accel_diff_thresh: 1.0
+    min_decel: -3.0
+    max_accel: 3.0
+    accel_brake_fault_check_min_velocity: 1.39
