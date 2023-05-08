@@ -208,10 +208,10 @@ void PacmodDiagPublisher::checkPacmodAccelBrake(diagnostic_updater::DiagnosticSt
 
   if (checkBrakeFault()) {
     level = DiagStatus::ERROR;
-    msg = addMsg(msg, "Pacmod Brake Fault. Not decelerating enough.");
+    msg = "Pacmod Brake Fault. Not decelerating enough.";
   } else if (checkAccelFault()) {
     level = DiagStatus::ERROR;
-    msg = addMsg(msg, "Pacmod Accel Fault. Not accelerating enough.");
+    msg = "Pacmod Accel Fault. Not accelerating enough.";
   }
 
   stat.summary(level, msg);
