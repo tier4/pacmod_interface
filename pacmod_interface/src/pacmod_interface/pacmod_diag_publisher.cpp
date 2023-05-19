@@ -126,7 +126,10 @@ void PacmodDiagPublisher::callbackControlCmd(
     acc_cmd_que_, control_cmd->longitudinal.acceleration, control_cmd->stamp, accel_store_time_);
 }
 
-void PacmodDiagPublisher::callbackOdometry(const Odometry::SharedPtr odom) { odom_ptr_ = odom; }
+void PacmodDiagPublisher::callbackOdometry(const Odometry::SharedPtr odom)
+{
+  odom_ptr_ = odom;
+}
 
 void PacmodDiagPublisher::checkPacmodMsgs(diagnostic_updater::DiagnosticStatusWrapper & stat)
 {
@@ -327,7 +330,10 @@ bool PacmodDiagPublisher::isTimeoutPacmodMsgs()
   return dt > pacmod3_msgs_timeout_sec_;
 }
 
-bool PacmodDiagPublisher::receivedPacmodMsgs() { return is_pacmod_rpt_received_; }
+bool PacmodDiagPublisher::receivedPacmodMsgs()
+{
+  return is_pacmod_rpt_received_;
+}
 
 bool PacmodDiagPublisher::isBrakeActuatorAccident()
 {
@@ -344,4 +350,7 @@ bool PacmodDiagPublisher::isAccelAccident()
   return global_rpt_ptr_->pacmod_sys_fault_active && accel_rpt_ptr_->input_output_fault;
 }
 
-bool PacmodDiagPublisher::isOtherAccident() { return global_rpt_ptr_->pacmod_sys_fault_active; }
+bool PacmodDiagPublisher::isOtherAccident()
+{
+  return global_rpt_ptr_->pacmod_sys_fault_active;
+}
