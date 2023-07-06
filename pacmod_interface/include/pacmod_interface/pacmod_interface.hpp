@@ -19,7 +19,6 @@
 #include <tier4_api_utils/tier4_api_utils.hpp>
 #include <vehicle_info_util/vehicle_info_util.hpp>
 
-#include <autoware_auto_control_msgs/msg/ackermann_control_command.hpp>
 #include <autoware_auto_vehicle_msgs/msg/control_mode_report.hpp>
 #include <autoware_auto_vehicle_msgs/msg/engage.hpp>
 #include <autoware_auto_vehicle_msgs/msg/gear_command.hpp>
@@ -31,6 +30,7 @@
 #include <autoware_auto_vehicle_msgs/msg/turn_indicators_report.hpp>
 #include <autoware_auto_vehicle_msgs/msg/velocity_report.hpp>
 #include <autoware_auto_vehicle_msgs/srv/control_mode_command.hpp>
+#include <autoware_control_msgs/msg/control.hpp>
 #include <pacmod3_msgs/msg/global_rpt.hpp>
 #include <pacmod3_msgs/msg/steering_cmd.hpp>
 #include <pacmod3_msgs/msg/system_cmd_float.hpp>
@@ -74,8 +74,7 @@ private:
 
   /* subscribers */
   // From Autoware
-  rclcpp::Subscription<autoware_auto_control_msgs::msg::AckermannControlCommand>::SharedPtr
-    control_cmd_sub_;
+  rclcpp::Subscription<autoware_control_msgs::msg::Control>::SharedPtr control_cmd_sub_;
   rclcpp::Subscription<autoware_auto_vehicle_msgs::msg::GearCommand>::SharedPtr gear_cmd_sub_;
   rclcpp::Subscription<autoware_auto_vehicle_msgs::msg::TurnIndicatorsCommand>::SharedPtr
     turn_indicators_cmd_sub_;
@@ -169,7 +168,7 @@ private:
 
   /* input values */
   ActuationCommandStamped::ConstSharedPtr actuation_cmd_ptr_;
-  autoware_auto_control_msgs::msg::AckermannControlCommand::ConstSharedPtr control_cmd_ptr_;
+  autoware_control_msgs::msg::Control::ConstSharedPtr control_cmd_ptr_;
   autoware_auto_vehicle_msgs::msg::TurnIndicatorsCommand::ConstSharedPtr turn_indicators_cmd_ptr_;
   autoware_auto_vehicle_msgs::msg::HazardLightsCommand::ConstSharedPtr hazard_lights_cmd_ptr_;
   autoware_auto_vehicle_msgs::msg::GearCommand::ConstSharedPtr gear_cmd_ptr_;
@@ -191,8 +190,7 @@ private:
 
   /* callbacks */
   void callbackActuationCmd(const ActuationCommandStamped::ConstSharedPtr msg);
-  void callbackControlCmd(
-    const autoware_auto_control_msgs::msg::AckermannControlCommand::ConstSharedPtr msg);
+  void callbackControlCmd(const autoware_control_msgs::msg::Control::ConstSharedPtr msg);
 
   void callbackEmergencyCmd(
     const tier4_vehicle_msgs::msg::VehicleEmergencyStamped::ConstSharedPtr msg);

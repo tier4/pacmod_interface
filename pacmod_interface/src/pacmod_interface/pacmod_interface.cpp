@@ -70,7 +70,7 @@ PacmodInterface::PacmodInterface()
   using std::placeholders::_2;
 
   // From autoware
-  control_cmd_sub_ = create_subscription<autoware_auto_control_msgs::msg::AckermannControlCommand>(
+  control_cmd_sub_ = create_subscription<autoware_control_msgs::msg::Control>(
     "/control/command/control_cmd", 1, std::bind(&PacmodInterface::callbackControlCmd, this, _1));
   gear_cmd_sub_ = create_subscription<autoware_auto_vehicle_msgs::msg::GearCommand>(
     "/control/command/gear_cmd", 1, std::bind(&PacmodInterface::callbackGearCmd, this, _1));
@@ -187,7 +187,7 @@ void PacmodInterface::callbackEmergencyCmd(
 }
 
 void PacmodInterface::callbackControlCmd(
-  const autoware_auto_control_msgs::msg::AckermannControlCommand::ConstSharedPtr msg)
+  const autoware_control_msgs::msg::Control::ConstSharedPtr msg)
 {
   control_command_received_time_ = this->now();
   control_cmd_ptr_ = msg;
