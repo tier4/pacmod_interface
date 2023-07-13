@@ -61,6 +61,9 @@ PacmodInterface::PacmodInterface()
   /* parameter for engage sequence */
   need_separate_engage_sequence_ = declare_parameter("need_separate_engage_sequence", false);
 
+  /* parameter for preventing gear chattering */
+  margin_time_for_gear_change_ = declare_parameter("margin_time_for_gear_change", 2.0);
+
   /* initialize */
   prev_steer_cmd_.header.stamp = this->now();
   prev_steer_cmd_.command = 0.0;
@@ -524,7 +527,7 @@ void PacmodInterface::publishCommands()
     shift_cmd.enable = clear_override && sep_engage ? false : engage_cmd_;
     shift_cmd.ignore_overrides = false;
     shift_cmd.clear_override = clear_override;
-    shift_cmd.command = desired_shift;
+    shift_cmd.command = getGearCmdForPreventChatter(desired_shift);
     shift_cmd_pub_->publish(shift_cmd);
   }
 
@@ -599,6 +602,36 @@ uint16_t PacmodInterface::toPacmodShiftCmd(
   }
 
   return SystemCmdInt::SHIFT_NONE;
+}
+
+uint16_t PacmodInterface::getGearCmdForPreventChatter(uint16_t gear_command)
+{
+  // first time to change gear
+  if (!last_time_to_change_gear_ptr_) {
+    // send gear change command
+    last_time_to_change_gear_ptr_ = std::make_shared<rclcpp::Time>(this->now());
+    prev_gear_command_ = gear_command;
+    return gear_command;
+  }
+
+  // no gear change
+  if (gear_command == prev_gear_command_) {
+    return gear_command;
+  }
+
+  const auto time_from_last_gear_change = (this->now() - *last_time_to_change_gear_ptr_).seconds();
+  if (time_from_last_gear_change < margin_time_for_gear_change_) {
+    // hold current gear
+    RCLCPP_INFO_STREAM(get_logger(), "current_gear_command: " << static_cast<int>(gear_command));
+    RCLCPP_INFO_STREAM(get_logger(), "prev_gear_command: " << static_cast<int>(prev_gear_command_));
+    RCLCPP_INFO_STREAM(get_logger(), "send prev_gear_command for preventing gear-chattering");
+
+    return prev_gear_command_;
+  }
+  // send gear change command
+  last_time_to_change_gear_ptr_ = std::make_shared<rclcpp::Time>(this->now());
+  prev_gear_command_ = gear_command;
+  return gear_command;
 }
 
 std::optional<int32_t> PacmodInterface::toAutowareShiftReport(

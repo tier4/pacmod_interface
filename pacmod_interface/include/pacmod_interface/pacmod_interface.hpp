@@ -161,6 +161,8 @@ private:
   int hazard_recover_count_ = 0;
   const int hazard_recover_cmd_num_ = 5;
 
+  double margin_time_for_gear_change_;  // [s]
+
   vehicle_info_util::VehicleInfo vehicle_info_;
 
   // Service
@@ -188,6 +190,8 @@ private:
   rclcpp::Time control_command_received_time_;
   rclcpp::Time actuation_command_received_time_;
   rclcpp::Time last_shift_inout_matched_time_;
+  std::shared_ptr<rclcpp::Time> last_time_to_change_gear_ptr_;
+  uint16_t prev_gear_command_ = pacmod3_msgs::msg::SystemCmdInt::SHIFT_PARK;
 
   /* callbacks */
   void callbackActuationCmd(const ActuationCommandStamped::ConstSharedPtr msg);
@@ -221,6 +225,7 @@ private:
   double calculateVariableGearRatio(const double vel, const double steer_wheel);
   double calcSteerWheelRateCmd(const double gear_ratio);
   uint16_t toPacmodShiftCmd(const autoware_auto_vehicle_msgs::msg::GearCommand & gear_cmd);
+  uint16_t getGearCmdForPreventChatter(uint16_t gear_command);
   uint16_t toPacmodTurnCmd(
     const autoware_auto_vehicle_msgs::msg::TurnIndicatorsCommand & turn,
     const autoware_auto_vehicle_msgs::msg::HazardLightsCommand & hazard);

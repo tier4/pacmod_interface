@@ -57,25 +57,26 @@
 
 ## ROS Parameters
 
-| Name                              | Type   | Description                                                                               |
-| --------------------------------- | ------ | ----------------------------------------------------------------------------------------- |
-| `base_frame_id`                   | string | frame id (assigned in pacmod command, but it does not make sense)                         |
-| `command_timeout_ms`              | double | timeout [ms]                                                                              |
-| `loop_rate`                       | double | loop rate to publish commands                                                             |
-| `steering_offset`                 | double | steering wheel angle offset                                                               |
-| `enable_steering_rate_control`    | bool   | when enabled, max steering wheel rate is used for steering wheel angular velocity command |
-| `emergency_brake`                 | double | brake pedal for emergency                                                                 |
-| `vgr_coef_a`                      | double | coefficient to calculate steering wheel angle                                             |
-| `vgr_coef_b`                      | double | coefficient to calculate steering wheel angle                                             |
-| `vgr_coef_c`                      | double | coefficient to calculate steering wheel angle                                             |
-| `accel_pedal_offset`              | double | accel pedal offset                                                                        |
-| `brake_pedal_offset`              | double | brake pedal offset                                                                        |
-| `max_throttle`                    | double | max accel pedal                                                                           |
-| `max_brake`                       | double | max brake pedal                                                                           |
-| `max_steering_wheel`              | double | max steering wheel angle                                                                  |
-| `max_steering_wheel_rate`         | double | max steering wheel angular velocity                                                       |
-| `min_steering_wheel_rate`         | double | min steering wheel angular velocity                                                       |
-| `steering_wheel_rate_low_vel`     | double | min steering wheel angular velocity when velocity is low                                  |
-| `steering_wheel_rate_low_stopped` | double | min steering wheel angular velocity when velocity is almost 0                             |
-| `low_vel_thresh`                  | double | threshold velocity to decide the velocity is low for `steering_wheel_rate_low_vel`        |
-| `hazard_thresh_time`              | double | threshold time to keep hazard lights                                                      |
+| Name                              | Type   | Description                                                                                  |
+| --------------------------------- | ------ | -------------------------------------------------------------------------------------------- |
+| `base_frame_id`                   | string | frame id (assigned in pacmod command, but it does not make sense)                            |
+| `command_timeout_ms`              | double | timeout [ms]                                                                                 |
+| `loop_rate`                       | double | loop rate to publish commands                                                                |
+| `steering_offset`                 | double | steering wheel angle offset                                                                  |
+| `enable_steering_rate_control`    | bool   | when enabled, max steering wheel rate is used for steering wheel angular velocity command    |
+| `emergency_brake`                 | double | brake pedal for emergency                                                                    |
+| `vgr_coef_a`                      | double | coefficient to calculate steering wheel angle                                                |
+| `vgr_coef_b`                      | double | coefficient to calculate steering wheel angle                                                |
+| `vgr_coef_c`                      | double | coefficient to calculate steering wheel angle                                                |
+| `accel_pedal_offset`              | double | accel pedal offset                                                                           |
+| `brake_pedal_offset`              | double | brake pedal offset                                                                           |
+| `max_throttle`                    | double | max accel pedal                                                                              |
+| `max_brake`                       | double | max brake pedal                                                                              |
+| `max_steering_wheel`              | double | max steering wheel angle                                                                     |
+| `max_steering_wheel_rate`         | double | max steering wheel angular velocity                                                          |
+| `min_steering_wheel_rate`         | double | min steering wheel angular velocity                                                          |
+| `steering_wheel_rate_low_vel`     | double | min steering wheel angular velocity when velocity is low                                     |
+| `steering_wheel_rate_low_stopped` | double | min steering wheel angular velocity when velocity is almost 0                                |
+| `low_vel_thresh`                  | double | threshold velocity to decide the velocity is low for `steering_wheel_rate_low_vel`           |
+| `hazard_thresh_time`              | double | threshold time to keep hazard lights                                                         |
+| `margin_time_for_gear_change`     | double | Minimum time between consecutive gear transition commands, designed to prevent gear chatter. |
