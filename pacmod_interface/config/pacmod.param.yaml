@@ -17,5 +17,4 @@
     vgr_coef_c: 0.042
     accel_pedal_offset: 0.0
     brake_pedal_offset: 0.0
-    need_separate_engage_sequence: false
     margin_time_for_gear_change: 2.0
