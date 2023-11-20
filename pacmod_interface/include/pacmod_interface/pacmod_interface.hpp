@@ -45,10 +45,6 @@
 #include <tier4_vehicle_msgs/msg/steering_wheel_status_stamped.hpp>
 #include <tier4_vehicle_msgs/msg/vehicle_emergency_stamped.hpp>
 
-#include <message_filters/subscriber.h>
-#include <message_filters/sync_policies/approximate_time.h>
-#include <message_filters/synchronizer.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -66,12 +62,6 @@ public:
   PacmodInterface();
 
 private:
-  typedef message_filters::sync_policies::ApproximateTime<
-    pacmod3_msgs::msg::SystemRptFloat, pacmod3_msgs::msg::WheelSpeedRpt,
-    pacmod3_msgs::msg::SystemRptFloat, pacmod3_msgs::msg::SystemRptFloat,
-    pacmod3_msgs::msg::SystemRptInt, pacmod3_msgs::msg::SystemRptInt, pacmod3_msgs::msg::GlobalRpt>
-    PacmodFeedbacksSyncPolicy;
-
   /* subscribers */
   // From Autoware
   rclcpp::Subscription<autoware_auto_control_msgs::msg::AckermannControlCommand>::SharedPtr
@@ -87,16 +77,13 @@ private:
   // From Pacmod
   rclcpp::Subscription<pacmod3_msgs::msg::SystemRptInt>::SharedPtr rear_door_rpt_sub_;
 
-  std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptFloat>>
-    steer_wheel_rpt_sub_;
-  std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::WheelSpeedRpt>>
-    wheel_speed_rpt_sub_;
-  std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptFloat>> accel_rpt_sub_;
-  std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptFloat>> brake_rpt_sub_;
-  std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>> shift_rpt_sub_;
-  std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>> turn_rpt_sub_;
-  std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::GlobalRpt>> global_rpt_sub_;
-  std::unique_ptr<message_filters::Synchronizer<PacmodFeedbacksSyncPolicy>> pacmod_feedbacks_sync_;
+  rclcpp::Subscription<pacmod3_msgs::msg::SystemRptFloat>::SharedPtr steer_wheel_rpt_sub_;
+  rclcpp::Subscription<pacmod3_msgs::msg::WheelSpeedRpt>::SharedPtr wheel_speed_rpt_sub_;
+  rclcpp::Subscription<pacmod3_msgs::msg::SystemRptFloat>::SharedPtr accel_rpt_sub_;
+  rclcpp::Subscription<pacmod3_msgs::msg::SystemRptFloat>::SharedPtr brake_rpt_sub_;
+  rclcpp::Subscription<pacmod3_msgs::msg::SystemRptInt>::SharedPtr shift_rpt_sub_;
+  rclcpp::Subscription<pacmod3_msgs::msg::SystemRptInt>::SharedPtr turn_rpt_sub_;
+  rclcpp::Subscription<pacmod3_msgs::msg::GlobalRpt>::SharedPtr global_rpt_sub_;
 
   /* publishers */
   // To Pacmod
@@ -129,6 +116,14 @@ private:
   /* ros param */
   std::string base_frame_id_;
   int command_timeout_ms_;  // vehicle_cmd timeout [ms]
+  bool is_steer_wheel_rpt_received_ = false;
+  bool is_wheel_speed_rpt_received_ = false;
+  bool is_accel_rpt_received_ = false;
+  bool is_brake_rpt_received_ = false;
+  bool is_shift_rpt_received_ = false;
+  bool is_turn_rpt_received_ = false;
+  bool is_global_rpt_received_ = false;
+
   bool is_pacmod_rpt_received_ = false;
   bool is_pacmod_enabled_ = false;
   bool is_clear_override_needed_ = false;
@@ -206,17 +201,19 @@ private:
     const autoware_auto_vehicle_msgs::msg::HazardLightsCommand::ConstSharedPtr msg);
   void callbackEngage(const autoware_auto_vehicle_msgs::msg::Engage::ConstSharedPtr msg);
   void callbackRearDoor(const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr rear_door_rpt);
-  void callbackPacmodRpt(
-    const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr steer_wheel_rpt,
-    const pacmod3_msgs::msg::WheelSpeedRpt::ConstSharedPtr wheel_speed_rpt,
-    const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr accel_rpt,
-    const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr brake_rpt,
-    const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr gear_cmd_rpt,
-    const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr turn_rpt,
-    const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt);
+  void callbackSteerWheelRpt(
+    const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr steer_wheel_rpt);
+  void callbackWheelSpeedRpt(
+    const pacmod3_msgs::msg::WheelSpeedRpt::ConstSharedPtr wheel_speed_rpt);
+  void callbackAccelRpt(const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr accel_rpt);
+  void callbackBrakeRpt(const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr brake_rpt);
+  void callbackGearRpt(const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr gear_rpt);
+  void callbackTurnRpt(const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr turn_rpt);
+  void callbackGlobalRpt(const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt);
 
   /*  functions */
   void publishCommands();
+  void publishVehicleStatus();
   double calculateVehicleVelocity(
     const pacmod3_msgs::msg::WheelSpeedRpt & wheel_speed_rpt,
     const pacmod3_msgs::msg::SystemRptInt & shift_rpt);
