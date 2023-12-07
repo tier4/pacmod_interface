@@ -10,7 +10,7 @@
 
   | Name                                   | Type                                                     | Description                                           |
   | -------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------- |
-  | `/control/command/control_cmd`         | autoware_auto_control_msgs::msg::AckermannControlCommand | lateral and longitudinal control command              |
+  | `/control/command/control_cmd`         | autoware_control_msgs::msg::Control                      | lateral and longitudinal control command              |
   | `/control/command/gear_cmd`            | autoware_auto_vehicle_msgs::msg::GearCommand             | gear command                                          |
   | `/control/command/turn_indicators_cmd` | autoware_auto_vehicle_msgs::msg::TurnIndicatorsCommand   | turn indicators command                               |
   | `/control/command/hazard_lights_cmd`   | autoware_auto_vehicle_msgs::msg::HazardLightsCommand     | hazard lights command                                 |
