@@ -55,7 +55,7 @@ PacmodSteerTest::PacmodSteerTest()
   using std::placeholders::_1;
 
   // Engage
-  engage_cmd_sub_ = create_subscription<autoware_auto_vehicle_msgs::msg::Engage>(
+  engage_cmd_sub_ = create_subscription<autoware_vehicle_msgs::msg::Engage>(
     "/vehicle/engage", rclcpp::QoS{1}, std::bind(&PacmodSteerTest::callbackEngage, this, _1));
   // From pacmod
   steer_wheel_rpt_sub_ =
@@ -99,9 +99,9 @@ PacmodSteerTest::PacmodSteerTest()
     create_publisher<pacmod3_msgs::msg::SystemCmdInt>("/pacmod/turn_cmd", rclcpp::QoS{1});
 
   // To Autoware
-  vehicle_twist_pub_ = create_publisher<autoware_auto_vehicle_msgs::msg::VelocityReport>(
+  vehicle_twist_pub_ = create_publisher<autoware_vehicle_msgs::msg::VelocityReport>(
     "/vehicle/status/velocity_status", rclcpp::QoS{1});
-  steering_status_pub_ = create_publisher<autoware_auto_vehicle_msgs::msg::SteeringReport>(
+  steering_status_pub_ = create_publisher<autoware_vehicle_msgs::msg::SteeringReport>(
     "/vehicle/status/steering_status", rclcpp::QoS{1});
   // Timer
   auto timer_callback = std::bind(&PacmodSteerTest::publishCommands, this);
@@ -114,7 +114,7 @@ PacmodSteerTest::PacmodSteerTest()
 }
 
 void PacmodSteerTest::callbackEngage(
-  const autoware_auto_vehicle_msgs::msg::Engage::ConstSharedPtr msg)
+  const autoware_vehicle_msgs::msg::Engage::ConstSharedPtr msg)
 {
   engage_cmd_ = msg->engage;
   is_clear_override_needed_ = true;
@@ -164,7 +164,7 @@ void PacmodSteerTest::callbackPacmodRpt(
 
   /* publish vehicle status twist */
   {
-    autoware_auto_vehicle_msgs::msg::VelocityReport velocity_report;
+    autoware_vehicle_msgs::msg::VelocityReport velocity_report;
     velocity_report.header = header;
     velocity_report.longitudinal_velocity = current_velocity;  // [m/s]
     velocity_report.heading_rate =
@@ -174,7 +174,7 @@ void PacmodSteerTest::callbackPacmodRpt(
 
   /* publish current steering angle */
   {
-    autoware_auto_vehicle_msgs::msg::SteeringReport steer_msg;
+    autoware_vehicle_msgs::msg::SteeringReport steer_msg;
     steer_msg.stamp = header.stamp;
     steer_msg.steering_tire_angle = current_steer;
     steering_status_pub_->publish(steer_msg);
