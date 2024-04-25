@@ -23,7 +23,6 @@
 #include <autoware_vehicle_msgs/msg/gear_report.hpp>
 #include <autoware_vehicle_msgs/msg/steering_report.hpp>
 #include <autoware_vehicle_msgs/msg/turn_indicators_report.hpp>
-#include <autoware_vehicle_msgs/msg/vehicle_control_command.hpp>
 #include <autoware_vehicle_msgs/msg/velocity_report.hpp>
 #include <pacmod3_msgs/msg/global_rpt.hpp>
 #include <pacmod3_msgs/msg/steering_cmd.hpp>
