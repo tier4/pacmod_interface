@@ -4,6 +4,7 @@
 
   <arg name="vehicle_model" description="vehicle model name"/>
   <arg name="pacmod_param_path" default="$(find-pkg-share pacmod_interface)/config/pacmod_steer_test.param.yaml"/>
+  <arg name="socketcan_device" default="canVehicle"/>
 
   <!-- vehicle info param -->
   <include file="$(find-pkg-share global_parameter_loader)/launch/global_params.launch.py">
@@ -17,6 +18,10 @@
 
   <!-- pacmod3 -->
   <group>
-    <include file="$(find-pkg-share $(var vehicle_model)_description)/launch/pacmod3.launch.py"/>
+    <include file="$(find-pkg-share pacmod3)/launch/pacmod3.launch.xml" >
+      <arg name="use_socketcan" value="true"/>
+      <arg name="socketcan_device" value="$(var socketcan_device)" />
+    </include>
   </group>
+
 </launch>
