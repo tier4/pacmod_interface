@@ -96,32 +96,20 @@ PacmodInterface::PacmodInterface()
   rear_door_rpt_sub_ = create_subscription<pacmod3_msgs::msg::SystemRptInt>(
     "/pacmod/rear_pass_door_rpt", 1, std::bind(&PacmodInterface::callbackRearDoor, this, _1));
 
-  steer_wheel_rpt_sub_ =
-    std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptFloat>>(
-      this, "/pacmod/steering_rpt");
-  wheel_speed_rpt_sub_ =
-    std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::WheelSpeedRpt>>(
-      this, "/pacmod/wheel_speed_rpt");
-  accel_rpt_sub_ = std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptFloat>>(
-    this, "/pacmod/accel_rpt");
-  brake_rpt_sub_ = std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptFloat>>(
-    this, "/pacmod/brake_rpt");
-  shift_rpt_sub_ = std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>>(
-    this, "/pacmod/shift_rpt");
-  turn_rpt_sub_ = std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptInt>>(
-    this, "/pacmod/turn_rpt");
-  global_rpt_sub_ = std::make_unique<message_filters::Subscriber<pacmod3_msgs::msg::GlobalRpt>>(
-    this, "/pacmod/global_rpt");
-
-  pacmod_feedbacks_sync_ =
-    std::make_unique<message_filters::Synchronizer<PacmodFeedbacksSyncPolicy>>(
-      PacmodFeedbacksSyncPolicy(10), *steer_wheel_rpt_sub_, *wheel_speed_rpt_sub_, *accel_rpt_sub_,
-      *brake_rpt_sub_, *shift_rpt_sub_, *turn_rpt_sub_, *global_rpt_sub_);
-
-  pacmod_feedbacks_sync_->registerCallback(std::bind(
-    &PacmodInterface::callbackPacmodRpt, this, std::placeholders::_1, std::placeholders::_2,
-    std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6,
-    std::placeholders::_7));
+  steer_wheel_rpt_sub_ = create_subscription<pacmod3_msgs::msg::SystemRptFloat>(
+    "/pacmod/steering_rpt", 1, std::bind(&PacmodInterface::callbackSteerWheelRpt, this, _1));
+  wheel_speed_rpt_sub_ = create_subscription<pacmod3_msgs::msg::WheelSpeedRpt>(
+    "/pacmod/wheel_speed_rpt", 1, std::bind(&PacmodInterface::callbackWheelSpeedRpt, this, _1));
+  accel_rpt_sub_ = create_subscription<pacmod3_msgs::msg::SystemRptFloat>(
+    "/pacmod/accel_rpt", 1, std::bind(&PacmodInterface::callbackAccelRpt, this, _1));
+  brake_rpt_sub_ = create_subscription<pacmod3_msgs::msg::SystemRptFloat>(
+    "/pacmod/brake_rpt", 1, std::bind(&PacmodInterface::callbackBrakeRpt, this, _1));
+  shift_rpt_sub_ = create_subscription<pacmod3_msgs::msg::SystemRptInt>(
+    "/pacmod/shift_rpt", 1, std::bind(&PacmodInterface::callbackGearRpt, this, _1));
+  turn_rpt_sub_ = create_subscription<pacmod3_msgs::msg::SystemRptInt>(
+    "/pacmod/turn_rpt", 1, std::bind(&PacmodInterface::callbackTurnRpt, this, _1));
+  global_rpt_sub_ = create_subscription<pacmod3_msgs::msg::GlobalRpt>(
+    "/pacmod/global_rpt", 1, std::bind(&PacmodInterface::callbackGlobalRpt, this, _1));
 
   /* publisher */
   // To pacmod
@@ -241,24 +229,57 @@ void PacmodInterface::callbackRearDoor(
   door_status_pub_->publish(toAutowareDoorStatusMsg(*rear_door_rpt));
 }
 
-void PacmodInterface::callbackPacmodRpt(
-  const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr steer_wheel_rpt,
-  const pacmod3_msgs::msg::WheelSpeedRpt::ConstSharedPtr wheel_speed_rpt,
-  const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr accel_rpt,
-  const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr brake_rpt,
-  const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr shift_rpt,
-  const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr turn_rpt,
+void PacmodInterface::callbackSteerWheelRpt(
+  const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr steer_wheel_rpt)
+{
+  is_steer_wheel_rpt_received_ = true;
+  steer_wheel_rpt_ptr_ = steer_wheel_rpt;
+}
+
+void PacmodInterface::callbackWheelSpeedRpt(
+  const pacmod3_msgs::msg::WheelSpeedRpt::ConstSharedPtr wheel_speed_rpt)
+{
+  is_wheel_speed_rpt_received_ = true;
+  wheel_speed_rpt_ptr_ = wheel_speed_rpt;
+}
+
+void PacmodInterface::callbackAccelRpt(
+  const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr accel_rpt)
+{
+  is_accel_rpt_received_ = true;
+  accel_rpt_ptr_ = accel_rpt;
+}
+
+void PacmodInterface::callbackBrakeRpt(
+  const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr brake_rpt)
+{
+  is_brake_rpt_received_ = true;
+  brake_rpt_ptr_ = brake_rpt;
+}
+
+void PacmodInterface::callbackGearRpt(
+  const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr gear_rpt)
+{
+  is_shift_rpt_received_ = true;
+  gear_cmd_rpt_ptr_ = gear_rpt;
+}
+
+void PacmodInterface::callbackTurnRpt(
+  const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr turn_rpt)
+{
+  is_turn_rpt_received_ = true;
+  turn_rpt_ptr_ = turn_rpt;
+}
+
+void PacmodInterface::callbackGlobalRpt(
   const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt)
 {
-  is_pacmod_rpt_received_ = true;
-  steer_wheel_rpt_ptr_ = steer_wheel_rpt;
-  wheel_speed_rpt_ptr_ = wheel_speed_rpt;
-  accel_rpt_ptr_ = accel_rpt;
-  brake_rpt_ptr_ = brake_rpt;
-  gear_cmd_rpt_ptr_ = shift_rpt;
+  is_global_rpt_received_ = true;
   global_rpt_ptr_ = global_rpt;
-  turn_rpt_ptr_ = turn_rpt;
+}
 
+void PacmodInterface::publishVehicleStatus()
+{
   is_pacmod_enabled_ =
     steer_wheel_rpt_ptr_->enabled && accel_rpt_ptr_->enabled && brake_rpt_ptr_->enabled;
   RCLCPP_DEBUG(
@@ -293,7 +314,7 @@ void PacmodInterface::callbackPacmodRpt(
     autoware_vehicle_msgs::msg::ControlModeReport control_mode_msg;
     control_mode_msg.stamp = header.stamp;
 
-    if (global_rpt->enabled && is_pacmod_enabled_) {
+    if (global_rpt_ptr_->enabled && is_pacmod_enabled_) {
       control_mode_msg.mode = autoware_vehicle_msgs::msg::ControlModeReport::AUTONOMOUS;
     } else {
       control_mode_msg.mode = autoware_vehicle_msgs::msg::ControlModeReport::MANUAL;
@@ -344,18 +365,23 @@ void PacmodInterface::callbackPacmodRpt(
   {
     autoware_vehicle_msgs::msg::TurnIndicatorsReport turn_msg;
     turn_msg.stamp = header.stamp;
-    turn_msg.report = toAutowareTurnIndicatorsReport(*turn_rpt);
+    turn_msg.report = toAutowareTurnIndicatorsReport(*turn_rpt_ptr_);
     turn_indicators_status_pub_->publish(turn_msg);
 
     autoware_vehicle_msgs::msg::HazardLightsReport hazard_msg;
     hazard_msg.stamp = header.stamp;
-    hazard_msg.report = toAutowareHazardLightsReport(*turn_rpt);
+    hazard_msg.report = toAutowareHazardLightsReport(*turn_rpt_ptr_);
     hazard_lights_status_pub_->publish(hazard_msg);
   }
 }
 
 void PacmodInterface::publishCommands()
 {
+  is_pacmod_rpt_received_ = is_steer_wheel_rpt_received_ && is_wheel_speed_rpt_received_ &&
+                            is_accel_rpt_received_ && is_brake_rpt_received_ &&
+                            is_shift_rpt_received_ && is_turn_rpt_received_ &&
+                            is_global_rpt_received_;
+
   /* guard */
   if (!actuation_cmd_ptr_ || !control_cmd_ptr_ || !is_pacmod_rpt_received_ || !gear_cmd_ptr_) {
     RCLCPP_INFO_THROTTLE(
@@ -364,6 +390,8 @@ void PacmodInterface::publishCommands()
       is_pacmod_rpt_received_);
     return;
   }
+
+  publishVehicleStatus();
 
   const rclcpp::Time current_time = get_clock()->now();
 
