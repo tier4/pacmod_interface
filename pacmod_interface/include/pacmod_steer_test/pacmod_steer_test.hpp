@@ -79,11 +79,9 @@ private:
   rclcpp::Publisher<pacmod3_msgs::msg::SystemCmdInt>::SharedPtr turn_cmd_pub_;
 
   // output vehicle info
-  rclcpp::Publisher<autoware_vehicle_msgs::msg::ControlModeReport>::SharedPtr
-    control_mode_pub_;
+  rclcpp::Publisher<autoware_vehicle_msgs::msg::ControlModeReport>::SharedPtr control_mode_pub_;
   rclcpp::Publisher<autoware_vehicle_msgs::msg::VelocityReport>::SharedPtr vehicle_twist_pub_;
-  rclcpp::Publisher<autoware_vehicle_msgs::msg::SteeringReport>::SharedPtr
-    steering_status_pub_;
+  rclcpp::Publisher<autoware_vehicle_msgs::msg::SteeringReport>::SharedPtr steering_status_pub_;
   rclcpp::Publisher<autoware_vehicle_msgs::msg::GearReport>::SharedPtr shift_status_pub_;
   rclcpp::Publisher<autoware_vehicle_msgs::msg::TurnIndicatorsReport>::SharedPtr
     turn_signal_status_pub_;

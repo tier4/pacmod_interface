@@ -8,15 +8,15 @@
 
 - From Autoware
 
-  | Name                                   | Type                                                     | Description                                           |
-  | -------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------- |
-  | `/control/command/control_cmd`         | autoware_control_msgs::msg::Control                      | lateral and longitudinal control command              |
-  | `/control/command/gear_cmd`            | autoware_vehicle_msgs::msg::GearCommand             | gear command                                          |
-  | `/control/command/turn_indicators_cmd` | autoware_vehicle_msgs::msg::TurnIndicatorsCommand   | turn indicators command                               |
-  | `/control/command/hazard_lights_cmd`   | autoware_vehicle_msgs::msg::HazardLightsCommand     | hazard lights command                                 |
-  | `/vehicle/engage`                      | autoware_vehicle_msgs::msg::Engage                  | engage command                                        |
-  | `/vehicle/command/actuation_cmd`       | tier4_vehicle_msgs::msg::ActuationCommandStamped         | actuation (accel/brake pedal, steering wheel) command |
-  | `/control/command/emergency_cmd`       | tier4_vehicle_msgs::msg::VehicleEmergencyStamped         | emergency command                                     |
+  | Name                                   | Type                                              | Description                                           |
+  | -------------------------------------- | ------------------------------------------------- | ----------------------------------------------------- |
+  | `/control/command/control_cmd`         | autoware_control_msgs::msg::Control               | lateral and longitudinal control command              |
+  | `/control/command/gear_cmd`            | autoware_vehicle_msgs::msg::GearCommand           | gear command                                          |
+  | `/control/command/turn_indicators_cmd` | autoware_vehicle_msgs::msg::TurnIndicatorsCommand | turn indicators command                               |
+  | `/control/command/hazard_lights_cmd`   | autoware_vehicle_msgs::msg::HazardLightsCommand   | hazard lights command                                 |
+  | `/vehicle/engage`                      | autoware_vehicle_msgs::msg::Engage                | engage command                                        |
+  | `/vehicle/command/actuation_cmd`       | tier4_vehicle_msgs::msg::ActuationCommandStamped  | actuation (accel/brake pedal, steering wheel) command |
+  | `/control/command/emergency_cmd`       | tier4_vehicle_msgs::msg::VehicleEmergencyStamped  | emergency command                                     |
 
 - From Pacmod
 
@@ -45,8 +45,8 @@
 
 - To Autoware
 
-  | Name                                     | Type                                                    | Description                                          |
-  | ---------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------- |
+  | Name                                     | Type                                               | Description                                          |
+  | ---------------------------------------- | -------------------------------------------------- | ---------------------------------------------------- |
   | `/vehicle/status/control_mode`           | autoware_vehicle_msgs::msg::ControlModeReport      | control mode                                         |
   | `/vehicle/status/velocity_status`        | autoware_vehicle_msgs::msg::VelocityReport         | velocity                                             |
   | `/vehicle/status/steering_status`        | autoware_vehicle_msgs::msg::SteeringReport         | steering wheel angle                                 |

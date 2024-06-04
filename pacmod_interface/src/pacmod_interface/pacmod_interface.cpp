@@ -74,14 +74,12 @@ PacmodInterface::PacmodInterface()
     "/control/command/control_cmd", 1, std::bind(&PacmodInterface::callbackControlCmd, this, _1));
   gear_cmd_sub_ = create_subscription<autoware_vehicle_msgs::msg::GearCommand>(
     "/control/command/gear_cmd", 1, std::bind(&PacmodInterface::callbackGearCmd, this, _1));
-  turn_indicators_cmd_sub_ =
-    create_subscription<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>(
-      "/control/command/turn_indicators_cmd", rclcpp::QoS{1},
-      std::bind(&PacmodInterface::callbackTurnIndicatorsCommand, this, _1));
-  hazard_lights_cmd_sub_ =
-    create_subscription<autoware_vehicle_msgs::msg::HazardLightsCommand>(
-      "/control/command/hazard_lights_cmd", rclcpp::QoS{1},
-      std::bind(&PacmodInterface::callbackHazardLightsCommand, this, _1));
+  turn_indicators_cmd_sub_ = create_subscription<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>(
+    "/control/command/turn_indicators_cmd", rclcpp::QoS{1},
+    std::bind(&PacmodInterface::callbackTurnIndicatorsCommand, this, _1));
+  hazard_lights_cmd_sub_ = create_subscription<autoware_vehicle_msgs::msg::HazardLightsCommand>(
+    "/control/command/hazard_lights_cmd", rclcpp::QoS{1},
+    std::bind(&PacmodInterface::callbackHazardLightsCommand, this, _1));
 
   actuation_cmd_sub_ = create_subscription<ActuationCommandStamped>(
     "/control/command/actuation_cmd", 1,
@@ -137,9 +135,8 @@ PacmodInterface::PacmodInterface()
     "/vehicle/status/steering_status", rclcpp::QoS{1});
   gear_status_pub_ = create_publisher<autoware_vehicle_msgs::msg::GearReport>(
     "/vehicle/status/gear_status", rclcpp::QoS{1});
-  turn_indicators_status_pub_ =
-    create_publisher<autoware_vehicle_msgs::msg::TurnIndicatorsReport>(
-      "/vehicle/status/turn_indicators_status", rclcpp::QoS{1});
+  turn_indicators_status_pub_ = create_publisher<autoware_vehicle_msgs::msg::TurnIndicatorsReport>(
+    "/vehicle/status/turn_indicators_status", rclcpp::QoS{1});
   hazard_lights_status_pub_ = create_publisher<autoware_vehicle_msgs::msg::HazardLightsReport>(
     "/vehicle/status/hazard_lights_status", rclcpp::QoS{1});
   actuation_status_pub_ =
@@ -601,8 +598,7 @@ double PacmodInterface::calculateVariableGearRatio(const double vel, const doubl
     1e-5, vgr_coef_a_ + vgr_coef_b_ * vel * vel - vgr_coef_c_ * std::fabs(steer_wheel));
 }
 
-uint16_t PacmodInterface::toPacmodShiftCmd(
-  const autoware_vehicle_msgs::msg::GearCommand & gear_cmd)
+uint16_t PacmodInterface::toPacmodShiftCmd(const autoware_vehicle_msgs::msg::GearCommand & gear_cmd)
 {
   using pacmod3_msgs::msg::SystemCmdInt;
 

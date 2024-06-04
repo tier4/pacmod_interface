@@ -119,8 +119,7 @@ void PacmodDiagPublisher::callbackAccel(const AccelWithCovarianceStamped::ConstS
   addValueToQue(acc_que_, accel->accel.accel.linear.x, accel->header.stamp, accel_store_time_);
 }
 
-void PacmodDiagPublisher::callbackControlCmd(
-  const Control::ConstSharedPtr control_cmd)
+void PacmodDiagPublisher::callbackControlCmd(const Control::ConstSharedPtr control_cmd)
 {
   addValueToQue(
     acc_cmd_que_, control_cmd->longitudinal.acceleration, control_cmd->stamp, accel_store_time_);

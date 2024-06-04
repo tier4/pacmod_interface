@@ -64,8 +64,7 @@ public:
 private:
   /* subscribers */
   // From Autoware
-  rclcpp::Subscription<autoware_control_msgs::msg::Control>::SharedPtr
-    control_cmd_sub_;
+  rclcpp::Subscription<autoware_control_msgs::msg::Control>::SharedPtr control_cmd_sub_;
   rclcpp::Subscription<autoware_vehicle_msgs::msg::GearCommand>::SharedPtr gear_cmd_sub_;
   rclcpp::Subscription<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>::SharedPtr
     turn_indicators_cmd_sub_;
@@ -97,11 +96,9 @@ private:
     raw_steer_cmd_pub_;  // only for debug
 
   // To Autoware
-  rclcpp::Publisher<autoware_vehicle_msgs::msg::ControlModeReport>::SharedPtr
-    control_mode_pub_;
+  rclcpp::Publisher<autoware_vehicle_msgs::msg::ControlModeReport>::SharedPtr control_mode_pub_;
   rclcpp::Publisher<autoware_vehicle_msgs::msg::VelocityReport>::SharedPtr vehicle_twist_pub_;
-  rclcpp::Publisher<autoware_vehicle_msgs::msg::SteeringReport>::SharedPtr
-    steering_status_pub_;
+  rclcpp::Publisher<autoware_vehicle_msgs::msg::SteeringReport>::SharedPtr steering_status_pub_;
   rclcpp::Publisher<autoware_vehicle_msgs::msg::GearReport>::SharedPtr gear_status_pub_;
   rclcpp::Publisher<autoware_vehicle_msgs::msg::TurnIndicatorsReport>::SharedPtr
     turn_indicators_status_pub_;
@@ -188,8 +185,7 @@ private:
 
   /* callbacks */
   void callbackActuationCmd(const ActuationCommandStamped::ConstSharedPtr msg);
-  void callbackControlCmd(
-    const autoware_control_msgs::msg::Control::ConstSharedPtr msg);
+  void callbackControlCmd(const autoware_control_msgs::msg::Control::ConstSharedPtr msg);
 
   void callbackEmergencyCmd(
     const tier4_vehicle_msgs::msg::VehicleEmergencyStamped::ConstSharedPtr msg);

@@ -113,8 +113,7 @@ PacmodSteerTest::PacmodSteerTest()
   this->get_node_timers_interface()->add_timer(timer_, nullptr);
 }
 
-void PacmodSteerTest::callbackEngage(
-  const autoware_vehicle_msgs::msg::Engage::ConstSharedPtr msg)
+void PacmodSteerTest::callbackEngage(const autoware_vehicle_msgs::msg::Engage::ConstSharedPtr msg)
 {
   engage_cmd_ = msg->engage;
   is_clear_override_needed_ = true;
