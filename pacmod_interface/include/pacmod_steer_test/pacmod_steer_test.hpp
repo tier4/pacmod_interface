@@ -18,13 +18,12 @@
 #include <rclcpp/rclcpp.hpp>
 #include <vehicle_info_util/vehicle_info_util.hpp>
 
-#include <autoware_auto_vehicle_msgs/msg/control_mode_report.hpp>
-#include <autoware_auto_vehicle_msgs/msg/engage.hpp>
-#include <autoware_auto_vehicle_msgs/msg/gear_report.hpp>
-#include <autoware_auto_vehicle_msgs/msg/steering_report.hpp>
-#include <autoware_auto_vehicle_msgs/msg/turn_indicators_report.hpp>
-#include <autoware_auto_vehicle_msgs/msg/vehicle_control_command.hpp>
-#include <autoware_auto_vehicle_msgs/msg/velocity_report.hpp>
+#include <autoware_vehicle_msgs/msg/control_mode_report.hpp>
+#include <autoware_vehicle_msgs/msg/engage.hpp>
+#include <autoware_vehicle_msgs/msg/gear_report.hpp>
+#include <autoware_vehicle_msgs/msg/steering_report.hpp>
+#include <autoware_vehicle_msgs/msg/turn_indicators_report.hpp>
+#include <autoware_vehicle_msgs/msg/velocity_report.hpp>
 #include <pacmod3_msgs/msg/global_rpt.hpp>
 #include <pacmod3_msgs/msg/steering_cmd.hpp>
 #include <pacmod3_msgs/msg/system_cmd_float.hpp>
@@ -57,7 +56,7 @@ private:
 
   /* subscribers */
   // From Autoware
-  rclcpp::Subscription<autoware_auto_vehicle_msgs::msg::Engage>::SharedPtr engage_cmd_sub_;
+  rclcpp::Subscription<autoware_vehicle_msgs::msg::Engage>::SharedPtr engage_cmd_sub_;
 
   // From Pacmod
   std::unique_ptr<message_filters::Subscriber<pacmod3_msgs::msg::SystemRptFloat>>
@@ -80,13 +79,11 @@ private:
   rclcpp::Publisher<pacmod3_msgs::msg::SystemCmdInt>::SharedPtr turn_cmd_pub_;
 
   // output vehicle info
-  rclcpp::Publisher<autoware_auto_vehicle_msgs::msg::ControlModeReport>::SharedPtr
-    control_mode_pub_;
-  rclcpp::Publisher<autoware_auto_vehicle_msgs::msg::VelocityReport>::SharedPtr vehicle_twist_pub_;
-  rclcpp::Publisher<autoware_auto_vehicle_msgs::msg::SteeringReport>::SharedPtr
-    steering_status_pub_;
-  rclcpp::Publisher<autoware_auto_vehicle_msgs::msg::GearReport>::SharedPtr shift_status_pub_;
-  rclcpp::Publisher<autoware_auto_vehicle_msgs::msg::TurnIndicatorsReport>::SharedPtr
+  rclcpp::Publisher<autoware_vehicle_msgs::msg::ControlModeReport>::SharedPtr control_mode_pub_;
+  rclcpp::Publisher<autoware_vehicle_msgs::msg::VelocityReport>::SharedPtr vehicle_twist_pub_;
+  rclcpp::Publisher<autoware_vehicle_msgs::msg::SteeringReport>::SharedPtr steering_status_pub_;
+  rclcpp::Publisher<autoware_vehicle_msgs::msg::GearReport>::SharedPtr shift_status_pub_;
+  rclcpp::Publisher<autoware_vehicle_msgs::msg::TurnIndicatorsReport>::SharedPtr
     turn_signal_status_pub_;
 
   vehicle_info_util::VehicleInfo vehicle_info_;
@@ -118,7 +115,7 @@ private:
   bool engage_cmd_ = false;
 
   /* callbacks */
-  void callbackEngage(const autoware_auto_vehicle_msgs::msg::Engage::ConstSharedPtr msg);
+  void callbackEngage(const autoware_vehicle_msgs::msg::Engage::ConstSharedPtr msg);
   void callbackPacmodRpt(
     const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr steer_wheel_rpt,
     const pacmod3_msgs::msg::WheelSpeedRpt::ConstSharedPtr wheel_speed_rpt,
