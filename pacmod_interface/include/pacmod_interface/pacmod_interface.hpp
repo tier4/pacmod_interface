@@ -136,6 +136,7 @@ private:
   double brake_pedal_offset_;  // offset of brake pedal value
 
   double emergency_brake_;              // brake command when emergency [m/s^2]
+  bool use_external_emergency_brake_;   // set to true to not use emergency_brake_
   double max_throttle_;                 // max throttle [0~1]
   double max_brake_;                    // max throttle [0~1]
   double max_steering_wheel_;           // max steering wheel angle [rad]
