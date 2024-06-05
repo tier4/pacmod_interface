@@ -3,6 +3,7 @@
     base_frame_id: "base_link"
     command_timeout_ms: 1000
     loop_rate: 30.0
+    use_external_emergency_brake: false
     emergency_brake: 0.7
     max_throttle: 0.4
     max_brake: 0.8

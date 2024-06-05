@@ -37,6 +37,7 @@ PacmodInterface::PacmodInterface()
 
   /* parameters for emergency stop */
   emergency_brake_ = declare_parameter("emergency_brake", 0.7);
+  use_external_emergency_brake_ = declare_parameter("use_external_emergency_brake", false);
 
   /* vehicle parameters */
   vgr_coef_a_ = declare_parameter("vgr_coef_a", 15.713);
@@ -411,7 +412,10 @@ void PacmodInterface::publishCommands()
   if (t_out >= 0 && (control_cmd_delta_time_ms > t_out || actuation_cmd_delta_time_ms > t_out)) {
     timeouted = true;
   }
-  if (is_emergency_ || timeouted) {
+  /* check emergency and timeout */
+  const bool emergency_brake_needed =
+    (is_emergency_ && !use_external_emergency_brake_) || timeouted;
+  if (emergency_brake_needed) {
     RCLCPP_ERROR(
       get_logger(), "Emergency Stopping, emergency = %d, timeouted = %d", is_emergency_, timeouted);
     desired_throttle = 0.0;
