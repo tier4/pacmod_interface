@@ -16,7 +16,7 @@
 #define PACMOD_STEER_TEST__PACMOD_STEER_TEST_HPP_
 
 #include <rclcpp/rclcpp.hpp>
-#include <vehicle_info_util/vehicle_info_util.hpp>
+#include <autoware_vehicle_info_utils/vehicle_info_utils.hpp>
 
 #include <autoware_vehicle_msgs/msg/control_mode_report.hpp>
 #include <autoware_vehicle_msgs/msg/engage.hpp>
@@ -86,7 +86,7 @@ private:
   rclcpp::Publisher<autoware_vehicle_msgs::msg::TurnIndicatorsReport>::SharedPtr
     turn_signal_status_pub_;
 
-  vehicle_info_util::VehicleInfo vehicle_info_;
+  autoware::vehicle_info_utils::VehicleInfo vehicle_info_;
   rclcpp::TimerBase::SharedPtr timer_;
 
   /* ros param */
