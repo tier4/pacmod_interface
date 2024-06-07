@@ -15,8 +15,8 @@
 #ifndef PACMOD_STEER_TEST__PACMOD_STEER_TEST_HPP_
 #define PACMOD_STEER_TEST__PACMOD_STEER_TEST_HPP_
 
-#include <rclcpp/rclcpp.hpp>
 #include <autoware_vehicle_info_utils/vehicle_info_utils.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include <autoware_vehicle_msgs/msg/control_mode_report.hpp>
 #include <autoware_vehicle_msgs/msg/engage.hpp>

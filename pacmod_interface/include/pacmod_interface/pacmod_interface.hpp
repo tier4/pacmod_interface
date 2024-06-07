@@ -15,9 +15,9 @@
 #ifndef PACMOD_INTERFACE__PACMOD_INTERFACE_HPP_
 #define PACMOD_INTERFACE__PACMOD_INTERFACE_HPP_
 
+#include <autoware_vehicle_info_utils/vehicle_info_utils.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tier4_api_utils/tier4_api_utils.hpp>
-#include <autoware_vehicle_info_utils/vehicle_info_utils.hpp>
 
 #include <autoware_control_msgs/msg/control.hpp>
 #include <autoware_vehicle_msgs/msg/control_mode_report.hpp>
