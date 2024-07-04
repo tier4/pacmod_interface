@@ -293,7 +293,6 @@ void PacmodInterface::callbackPacmodRpt(
 
     if (global_rpt->enabled && is_pacmod_enabled_) {
       control_mode_msg.mode = autoware_vehicle_msgs::msg::ControlModeReport::AUTONOMOUS;
-      ;
     } else {
       control_mode_msg.mode = autoware_vehicle_msgs::msg::ControlModeReport::MANUAL;
     }
