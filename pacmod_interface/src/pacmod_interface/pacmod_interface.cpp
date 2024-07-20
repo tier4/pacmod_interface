@@ -115,24 +115,24 @@ PacmodInterface::PacmodInterface() : Node("pacmod_interface")
     "/pacmod/raw_steer_cmd", rclcpp::QoS{1});  // only for debug
 
   // To Autoware
-  control_mode_pub_ = create_publisher<autoware_vehicle_msgs::msg::ControlModeReport>(
+  control_mode_pub_ = create_publisher<vehicle_msgs::msg::ControlModeReport>(
     "/vehicle/status/control_mode", rclcpp::QoS{1});
-  vehicle_twist_pub_ = create_publisher<autoware_vehicle_msgs::msg::VelocityReport>(
+  vehicle_twist_pub_ = create_publisher<vehicle_msgs::msg::VelocityReport>(
     "/vehicle/status/velocity_status", rclcpp::QoS{1});
-  steering_status_pub_ = create_publisher<autoware_vehicle_msgs::msg::SteeringReport>(
+  steering_status_pub_ = create_publisher<vehicle_msgs::msg::SteeringReport>(
     "/vehicle/status/steering_status", rclcpp::QoS{1});
-  gear_status_pub_ = create_publisher<autoware_vehicle_msgs::msg::GearReport>(
-    "/vehicle/status/gear_status", rclcpp::QoS{1});
-  turn_indicators_status_pub_ = create_publisher<autoware_vehicle_msgs::msg::TurnIndicatorsReport>(
+  gear_status_pub_ =
+    create_publisher<vehicle_msgs::msg::GearReport>("/vehicle/status/gear_status", rclcpp::QoS{1});
+  turn_indicators_status_pub_ = create_publisher<vehicle_msgs::msg::TurnIndicatorsReport>(
     "/vehicle/status/turn_indicators_status", rclcpp::QoS{1});
-  hazard_lights_status_pub_ = create_publisher<autoware_vehicle_msgs::msg::HazardLightsReport>(
+  hazard_lights_status_pub_ = create_publisher<vehicle_msgs::msg::HazardLightsReport>(
     "/vehicle/status/hazard_lights_status", rclcpp::QoS{1});
-  actuation_status_pub_ =
-    create_publisher<ActuationStatusStamped>("/vehicle/status/actuation_status", 1);
-  steering_wheel_status_pub_ =
-    create_publisher<SteeringWheelStatusStamped>("/vehicle/status/steering_wheel_status", 1);
+  actuation_status_pub_ = create_publisher<vehicle_msgs::msg::ActuationStatusStamped>(
+    "/vehicle/status/actuation_status", 1);
+  steering_wheel_status_pub_ = create_publisher<vehicle_msgs::msg::SteeringWheelStatusStamped>(
+    "/vehicle/status/steering_wheel_status", 1);
   door_status_pub_ =
-    create_publisher<tier4_api_msgs::msg::DoorStatus>("/vehicle/status/door_status", 1);
+    create_publisher<vehicle_msgs::msg::DoorStatus>("/vehicle/status/door_status", 1);
 
 }
 
@@ -184,7 +184,7 @@ void PacmodInterface::callbackPacmodRpt(
 
   /* publish steering wheel status */
   {
-    SteeringWheelStatusStamped steering_wheel_status_msg;
+    vehicle_msgs::msg::SteeringWheelStatusStamped steering_wheel_status_msg;
     steering_wheel_status_msg.stamp = header.stamp;
     steering_wheel_status_msg.data = current_steer_wheel;
     steering_wheel_status_pub_->publish(steering_wheel_status_msg);
@@ -192,13 +192,13 @@ void PacmodInterface::callbackPacmodRpt(
 
   /* publish vehicle status control_mode */
   {
-    autoware_vehicle_msgs::msg::ControlModeReport control_mode_msg;
+    vehicle_msgs::msg::ControlModeReport control_mode_msg;
     control_mode_msg.stamp = header.stamp;
 
     if (global_rpt->enabled && is_pacmod_enabled_) {
-      control_mode_msg.mode = autoware_vehicle_msgs::msg::ControlModeReport::AUTONOMOUS;
+      control_mode_msg.mode = vehicle_msgs::msg::ControlModeReport::AUTONOMOUS;
     } else {
-      control_mode_msg.mode = autoware_vehicle_msgs::msg::ControlModeReport::MANUAL;
+      control_mode_msg.mode = vehicle_msgs::msg::ControlModeReport::MANUAL;
     }
 
     control_mode_pub_->publish(control_mode_msg);
@@ -206,7 +206,7 @@ void PacmodInterface::callbackPacmodRpt(
 
   /* publish vehicle status twist */
   {
-    autoware_vehicle_msgs::msg::VelocityReport twist;
+    vehicle_msgs::msg::VelocityReport twist;
     twist.header = header;
     twist.longitudinal_velocity = current_velocity;                                 // [m/s]
     twist.heading_rate = current_velocity * std::tan(current_steer) / wheel_base_;  // [rad/s]
@@ -215,7 +215,7 @@ void PacmodInterface::callbackPacmodRpt(
 
   /* publish current shift */
   {
-    autoware_vehicle_msgs::msg::GearReport gear_report_msg;
+    vehicle_msgs::msg::GearReport gear_report_msg;
     gear_report_msg.stamp = header.stamp;
     const auto opt_gear_report = toAutowareShiftReport(*gear_cmd_rpt_ptr_);
     if (opt_gear_report) {
@@ -226,7 +226,7 @@ void PacmodInterface::callbackPacmodRpt(
 
   /* publish current status */
   {
-    autoware_vehicle_msgs::msg::SteeringReport steer_msg;
+    vehicle_msgs::msg::SteeringReport steer_msg;
     steer_msg.stamp = header.stamp;
     steer_msg.steering_tire_angle = current_steer;
     steering_status_pub_->publish(steer_msg);
@@ -234,7 +234,7 @@ void PacmodInterface::callbackPacmodRpt(
 
   /* publish control status */
   {
-    ActuationStatusStamped actuation_status;
+    vehicle_msgs::msg::ActuationStatusStamped actuation_status;
     actuation_status.header = header;
     actuation_status.status.accel_status = accel_rpt_ptr_->output;
     actuation_status.status.brake_status = brake_rpt_ptr_->output;
@@ -244,12 +244,12 @@ void PacmodInterface::callbackPacmodRpt(
 
   /* publish current turn signal */
   {
-    autoware_vehicle_msgs::msg::TurnIndicatorsReport turn_msg;
+    vehicle_msgs::msg::TurnIndicatorsReport turn_msg;
     turn_msg.stamp = header.stamp;
     turn_msg.report = toAutowareTurnIndicatorsReport(*turn_rpt);
     turn_indicators_status_pub_->publish(turn_msg);
 
-    autoware_vehicle_msgs::msg::HazardLightsReport hazard_msg;
+    vehicle_msgs::msg::HazardLightsReport hazard_msg;
     hazard_msg.stamp = header.stamp;
     hazard_msg.report = toAutowareHazardLightsReport(*turn_rpt);
     hazard_lights_status_pub_->publish(hazard_msg);
@@ -306,8 +306,8 @@ uint16_t PacmodInterface::getGearCmdForPreventChatter(uint16_t gear_command)
 std::optional<int32_t> PacmodInterface::toAutowareShiftReport(
   const pacmod3_msgs::msg::SystemRptInt & shift)
 {
-  using autoware_vehicle_msgs::msg::GearReport;
   using pacmod3_msgs::msg::SystemRptInt;
+  using vehicle_msgs::msg::GearReport;
 
   if (shift.output == SystemRptInt::SHIFT_PARK) {
     return GearReport::PARK;
@@ -327,8 +327,8 @@ std::optional<int32_t> PacmodInterface::toAutowareShiftReport(
 int32_t PacmodInterface::toAutowareTurnIndicatorsReport(
   const pacmod3_msgs::msg::SystemRptInt & turn)
 {
-  using autoware_vehicle_msgs::msg::TurnIndicatorsReport;
   using pacmod3_msgs::msg::SystemRptInt;
+  using vehicle_msgs::msg::TurnIndicatorsReport;
 
   if (turn.output == SystemRptInt::TURN_RIGHT) {
     return TurnIndicatorsReport::ENABLE_RIGHT;
@@ -343,8 +343,8 @@ int32_t PacmodInterface::toAutowareTurnIndicatorsReport(
 int32_t PacmodInterface::toAutowareHazardLightsReport(
   const pacmod3_msgs::msg::SystemRptInt & hazard)
 {
-  using autoware_vehicle_msgs::msg::HazardLightsReport;
   using pacmod3_msgs::msg::SystemRptInt;
+  using vehicle_msgs::msg::HazardLightsReport;
 
   if (hazard.output == SystemRptInt::TURN_HAZARDS) {
     return HazardLightsReport::ENABLE;
@@ -354,11 +354,11 @@ int32_t PacmodInterface::toAutowareHazardLightsReport(
 }
 
 
-tier4_api_msgs::msg::DoorStatus PacmodInterface::toAutowareDoorStatusMsg(
+vehicle_msgs::msg::DoorStatus PacmodInterface::toAutowareDoorStatusMsg(
   const pacmod3_msgs::msg::SystemRptInt & msg_ptr)
 {
   using pacmod3_msgs::msg::SystemRptInt;
-  using tier4_api_msgs::msg::DoorStatus;
+  using vehicle_msgs::msg::DoorStatus;
   DoorStatus door_status;
 
   door_status.status = DoorStatus::UNKNOWN;

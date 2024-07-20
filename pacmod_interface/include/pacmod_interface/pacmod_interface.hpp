@@ -15,22 +15,9 @@
 #ifndef PACMOD_INTERFACE__PACMOD_INTERFACE_HPP_
 #define PACMOD_INTERFACE__PACMOD_INTERFACE_HPP_
 
-#include <autoware_vehicle_info_utils/vehicle_info_utils.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <tier4_api_utils/tier4_api_utils.hpp>
+#include <vehicle_info_util/vehicle_info_util.hpp>
 
-#include <autoware_control_msgs/msg/control.hpp>
-#include <autoware_vehicle_msgs/msg/control_mode_report.hpp>
-#include <autoware_vehicle_msgs/msg/engage.hpp>
-#include <autoware_vehicle_msgs/msg/gear_command.hpp>
-#include <autoware_vehicle_msgs/msg/gear_report.hpp>
-#include <autoware_vehicle_msgs/msg/hazard_lights_command.hpp>
-#include <autoware_vehicle_msgs/msg/hazard_lights_report.hpp>
-#include <autoware_vehicle_msgs/msg/steering_report.hpp>
-#include <autoware_vehicle_msgs/msg/turn_indicators_command.hpp>
-#include <autoware_vehicle_msgs/msg/turn_indicators_report.hpp>
-#include <autoware_vehicle_msgs/msg/velocity_report.hpp>
-#include <autoware_vehicle_msgs/srv/control_mode_command.hpp>
 #include <pacmod3_msgs/msg/global_rpt.hpp>
 #include <pacmod3_msgs/msg/steering_cmd.hpp>
 #include <pacmod3_msgs/msg/system_cmd_float.hpp>
@@ -38,12 +25,16 @@
 #include <pacmod3_msgs/msg/system_rpt_float.hpp>
 #include <pacmod3_msgs/msg/system_rpt_int.hpp>
 #include <pacmod3_msgs/msg/wheel_speed_rpt.hpp>
-#include <tier4_api_msgs/msg/door_status.hpp>
-#include <tier4_external_api_msgs/srv/set_door.hpp>
-#include <tier4_vehicle_msgs/msg/actuation_command_stamped.hpp>
-#include <tier4_vehicle_msgs/msg/actuation_status_stamped.hpp>
-#include <tier4_vehicle_msgs/msg/steering_wheel_status_stamped.hpp>
-#include <tier4_vehicle_msgs/msg/vehicle_emergency_stamped.hpp>
+#include <vehicle_msgs/msg/actuation_status_stamped.hpp>
+#include <vehicle_msgs/msg/control_mode_report.hpp>
+#include <vehicle_msgs/msg/door_status.hpp>
+#include <vehicle_msgs/msg/gear_report.hpp>
+#include <vehicle_msgs/msg/hazard_lights_report.hpp>
+#include <vehicle_msgs/msg/steering_report.hpp>
+#include <vehicle_msgs/msg/steering_wheel_status_stamped.hpp>
+#include <vehicle_msgs/msg/turn_indicators_report.hpp>
+#include <vehicle_msgs/msg/vehicle_emergency_stamped.hpp>
+#include <vehicle_msgs/msg/velocity_report.hpp>
 
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -96,19 +87,16 @@ private:
     raw_steer_cmd_pub_;  // only for debug
 
   // To Autoware
-  rclcpp::Publisher<autoware_vehicle_msgs::msg::ControlModeReport>::SharedPtr control_mode_pub_;
-  rclcpp::Publisher<autoware_vehicle_msgs::msg::VelocityReport>::SharedPtr vehicle_twist_pub_;
-  rclcpp::Publisher<autoware_vehicle_msgs::msg::SteeringReport>::SharedPtr steering_status_pub_;
-  rclcpp::Publisher<autoware_vehicle_msgs::msg::GearReport>::SharedPtr gear_status_pub_;
-  rclcpp::Publisher<autoware_vehicle_msgs::msg::TurnIndicatorsReport>::SharedPtr
-    turn_indicators_status_pub_;
-  rclcpp::Publisher<autoware_vehicle_msgs::msg::HazardLightsReport>::SharedPtr
-    hazard_lights_status_pub_;
-  rclcpp::Publisher<ActuationStatusStamped>::SharedPtr actuation_status_pub_;
-  rclcpp::Publisher<SteeringWheelStatusStamped>::SharedPtr steering_wheel_status_pub_;
-  rclcpp::Publisher<tier4_api_msgs::msg::DoorStatus>::SharedPtr door_status_pub_;
-
-  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Publisher<vehicle_msgs::msg::ControlModeReport>::SharedPtr control_mode_pub_;
+  rclcpp::Publisher<vehicle_msgs::msg::VelocityReport>::SharedPtr vehicle_twist_pub_;
+  rclcpp::Publisher<vehicle_msgs::msg::SteeringReport>::SharedPtr steering_status_pub_;
+  rclcpp::Publisher<vehicle_msgs::msg::GearReport>::SharedPtr gear_status_pub_;
+  rclcpp::Publisher<vehicle_msgs::msg::TurnIndicatorsReport>::SharedPtr turn_indicators_status_pub_;
+  rclcpp::Publisher<vehicle_msgs::msg::HazardLightsReport>::SharedPtr hazard_lights_status_pub_;
+  rclcpp::Publisher<vehicle_msgs::msg::ActuationStatusStamped>::SharedPtr actuation_status_pub_;
+  rclcpp::Publisher<vehicle_msgs::msg::SteeringWheelStatusStamped>::SharedPtr
+    steering_wheel_status_pub_;
+  rclcpp::Publisher<vehicle_msgs::msg::DoorStatus>::SharedPtr door_status_pub_;
 
   /* ros param */
   std::string base_frame_id_;
@@ -144,11 +132,7 @@ private:
 
   double margin_time_for_gear_change_;  // [s]
 
-  autoware::vehicle_info_utils::VehicleInfo vehicle_info_;
-
-  // Service
-  tier4_api_utils::Service<tier4_external_api_msgs::srv::SetDoor>::SharedPtr srv_;
-  rclcpp::Service<ControlModeCommand>::SharedPtr control_mode_server_;
+  vehicle_info_util::VehicleInfo vehicle_info_;
 
   /* input values */
   pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr steer_wheel_rpt_ptr_;  // [rad]
