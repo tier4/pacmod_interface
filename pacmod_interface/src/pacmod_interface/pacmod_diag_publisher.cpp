@@ -80,9 +80,6 @@ PacmodDiagPublisher::PacmodDiagPublisher()
   current_acc_sub_ = create_subscription<AccelWithCovarianceStamped>(
     "/localization/acceleration", 1,
     std::bind(&PacmodDiagPublisher::callbackAccel, this, std::placeholders::_1));
-  control_cmd_sub_ = create_subscription<Control>(
-    "/control/command/control_cmd", 1,
-    std::bind(&PacmodDiagPublisher::callbackControlCmd, this, std::placeholders::_1));
   odom_sub_ = create_subscription<Odometry>(
     "/localization/kinematic_state", 1,
     std::bind(&PacmodDiagPublisher::callbackOdometry, this, std::placeholders::_1));
@@ -117,12 +114,6 @@ void PacmodDiagPublisher::callbackPacmodRpt(
 void PacmodDiagPublisher::callbackAccel(const AccelWithCovarianceStamped::ConstSharedPtr accel)
 {
   addValueToQue(acc_que_, accel->accel.accel.linear.x, accel->header.stamp, accel_store_time_);
-}
-
-void PacmodDiagPublisher::callbackControlCmd(const Control::ConstSharedPtr control_cmd)
-{
-  addValueToQue(
-    acc_cmd_que_, control_cmd->longitudinal.acceleration, control_cmd->stamp, accel_store_time_);
 }
 
 void PacmodDiagPublisher::callbackOdometry(const Odometry::SharedPtr odom)

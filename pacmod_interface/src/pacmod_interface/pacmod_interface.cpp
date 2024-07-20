@@ -13,15 +13,14 @@
 // limitations under the License.
 
 #include <pacmod_interface/pacmod_interface.hpp>
+#include <vehicle_info_util/vehicle_info_util.hpp>
 
 #include <algorithm>
 #include <limits>
 #include <memory>
 #include <utility>
 
-PacmodInterface::PacmodInterface()
-: Node("pacmod_interface"),
-  vehicle_info_(autoware::vehicle_info_utils::VehicleInfoUtils(*this).getVehicleInfo())
+PacmodInterface::PacmodInterface() : Node("pacmod_interface")
 {
   /* setup parameters */
   base_frame_id_ = declare_parameter("base_frame_id", "base_link");
@@ -29,15 +28,12 @@ PacmodInterface::PacmodInterface()
   loop_rate_ = declare_parameter("loop_rate", 30.0);
 
   /* parameters for vehicle specifications */
+  vehicle_info_ = vehicle_info_util::VehicleInfoUtil(*this).getVehicleInfo();
   tire_radius_ = vehicle_info_.wheel_radius_m;
   wheel_base_ = vehicle_info_.wheel_base_m;
 
   steering_offset_ = declare_parameter("steering_offset", 0.0);
   enable_steering_rate_control_ = declare_parameter("enable_steering_rate_control", false);
-
-  /* parameters for emergency stop */
-  emergency_brake_ = declare_parameter("emergency_brake", 0.7);
-  use_external_emergency_brake_ = declare_parameter("use_external_emergency_brake", false);
 
   /* vehicle parameters */
   vgr_coef_a_ = declare_parameter("vgr_coef_a", 15.713);
@@ -69,27 +65,6 @@ PacmodInterface::PacmodInterface()
   /* subscribers */
   using std::placeholders::_1;
   using std::placeholders::_2;
-
-  // From autoware
-  control_cmd_sub_ = create_subscription<autoware_control_msgs::msg::Control>(
-    "/control/command/control_cmd", 1, std::bind(&PacmodInterface::callbackControlCmd, this, _1));
-  gear_cmd_sub_ = create_subscription<autoware_vehicle_msgs::msg::GearCommand>(
-    "/control/command/gear_cmd", 1, std::bind(&PacmodInterface::callbackGearCmd, this, _1));
-  turn_indicators_cmd_sub_ = create_subscription<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>(
-    "/control/command/turn_indicators_cmd", rclcpp::QoS{1},
-    std::bind(&PacmodInterface::callbackTurnIndicatorsCommand, this, _1));
-  hazard_lights_cmd_sub_ = create_subscription<autoware_vehicle_msgs::msg::HazardLightsCommand>(
-    "/control/command/hazard_lights_cmd", rclcpp::QoS{1},
-    std::bind(&PacmodInterface::callbackHazardLightsCommand, this, _1));
-
-  actuation_cmd_sub_ = create_subscription<ActuationCommandStamped>(
-    "/control/command/actuation_cmd", 1,
-    std::bind(&PacmodInterface::callbackActuationCmd, this, _1));
-  emergency_sub_ = create_subscription<tier4_vehicle_msgs::msg::VehicleEmergencyStamped>(
-    "/control/command/emergency_cmd", 1,
-    std::bind(&PacmodInterface::callbackEmergencyCmd, this, _1));
-  control_mode_server_ = create_service<ControlModeCommand>(
-    "input/control_mode_request", std::bind(&PacmodInterface::onControlModeRequest, this, _1, _2));
 
   // From pacmod
   rear_door_rpt_sub_ = create_subscription<pacmod3_msgs::msg::SystemRptInt>(
@@ -159,77 +134,6 @@ PacmodInterface::PacmodInterface()
   door_status_pub_ =
     create_publisher<tier4_api_msgs::msg::DoorStatus>("/vehicle/status/door_status", 1);
 
-  /* service */
-  //  From autoware
-  tier4_api_utils::ServiceProxyNodeInterface proxy(this);
-  srv_ = proxy.create_service<tier4_external_api_msgs::srv::SetDoor>(
-    "/api/vehicle/set/door",
-    std::bind(&PacmodInterface::setDoor, this, std::placeholders::_1, std::placeholders::_2));
-
-  // Timer
-  const auto period_ns = rclcpp::Rate(loop_rate_).period();
-  timer_ = rclcpp::create_timer(
-    this, get_clock(), period_ns, std::bind(&PacmodInterface::publishCommands, this));
-}
-
-void PacmodInterface::callbackActuationCmd(const ActuationCommandStamped::ConstSharedPtr msg)
-{
-  actuation_command_received_time_ = this->now();
-  actuation_cmd_ptr_ = msg;
-}
-
-void PacmodInterface::callbackEmergencyCmd(
-  const tier4_vehicle_msgs::msg::VehicleEmergencyStamped::ConstSharedPtr msg)
-{
-  is_emergency_ = msg->emergency;
-}
-
-void PacmodInterface::callbackControlCmd(
-  const autoware_control_msgs::msg::Control::ConstSharedPtr msg)
-{
-  control_command_received_time_ = this->now();
-  control_cmd_ptr_ = msg;
-}
-
-void PacmodInterface::callbackGearCmd(
-  const autoware_vehicle_msgs::msg::GearCommand::ConstSharedPtr msg)
-{
-  gear_cmd_ptr_ = msg;
-}
-
-void PacmodInterface::callbackTurnIndicatorsCommand(
-  const autoware_vehicle_msgs::msg::TurnIndicatorsCommand::ConstSharedPtr msg)
-{
-  turn_indicators_cmd_ptr_ = msg;
-}
-
-void PacmodInterface::callbackHazardLightsCommand(
-  const autoware_vehicle_msgs::msg::HazardLightsCommand::ConstSharedPtr msg)
-{
-  hazard_lights_cmd_ptr_ = msg;
-}
-
-void PacmodInterface::onControlModeRequest(
-  const ControlModeCommand::Request::SharedPtr request,
-  const ControlModeCommand::Response::SharedPtr response)
-{
-  if (request->mode == ControlModeCommand::Request::AUTONOMOUS) {
-    engage_cmd_ = true;
-    is_clear_override_needed_ = true;
-    response->success = true;
-    return;
-  }
-
-  if (request->mode == ControlModeCommand::Request::MANUAL) {
-    engage_cmd_ = false;
-    is_clear_override_needed_ = true;
-    response->success = true;
-    return;
-  }
-
-  RCLCPP_ERROR(get_logger(), "unsupported control_mode!!");
-  response->success = false;
-  return;
 }
 
 void PacmodInterface::callbackRearDoor(
@@ -352,211 +256,6 @@ void PacmodInterface::callbackPacmodRpt(
   }
 }
 
-void PacmodInterface::publishCommands()
-{
-  /* guard */
-  if (!actuation_cmd_ptr_ || !control_cmd_ptr_ || !is_pacmod_rpt_received_ || !gear_cmd_ptr_) {
-    RCLCPP_INFO_THROTTLE(
-      get_logger(), *get_clock(), std::chrono::milliseconds(1000).count(),
-      "vehicle_cmd = %d, pacmod3_msgs = %d", actuation_cmd_ptr_ != nullptr,
-      is_pacmod_rpt_received_);
-    return;
-  }
-
-  const rclcpp::Time current_time = get_clock()->now();
-
-  double desired_throttle = actuation_cmd_ptr_->actuation.accel_cmd + accel_pedal_offset_;
-  double desired_brake = actuation_cmd_ptr_->actuation.brake_cmd + brake_pedal_offset_;
-  if (actuation_cmd_ptr_->actuation.brake_cmd <= std::numeric_limits<double>::epsilon()) {
-    desired_brake = 0.0;
-  }
-
-  /* check emergency and timeout */
-  const double control_cmd_delta_time_ms =
-    (current_time - control_command_received_time_).seconds() * 1000.0;
-  const double actuation_cmd_delta_time_ms =
-    (current_time - actuation_command_received_time_).seconds() * 1000.0;
-  bool timeouted = false;
-  const int t_out = command_timeout_ms_;
-  if (t_out >= 0 && (control_cmd_delta_time_ms > t_out || actuation_cmd_delta_time_ms > t_out)) {
-    timeouted = true;
-  }
-  /* check emergency and timeout */
-  const bool emergency_brake_needed =
-    (is_emergency_ && !use_external_emergency_brake_) || timeouted;
-  if (emergency_brake_needed) {
-    RCLCPP_ERROR(
-      get_logger(), "Emergency Stopping, emergency = %d, timeouted = %d", is_emergency_, timeouted);
-    desired_throttle = 0.0;
-    desired_brake = emergency_brake_;
-  }
-
-  const double current_velocity =
-    calculateVehicleVelocity(*wheel_speed_rpt_ptr_, *gear_cmd_rpt_ptr_);
-  const double current_steer_wheel = steer_wheel_rpt_ptr_->output;
-
-  /* calculate desired steering wheel */
-  double adaptive_gear_ratio = calculateVariableGearRatio(current_velocity, current_steer_wheel);
-  double desired_steer_wheel =
-    (control_cmd_ptr_->lateral.steering_tire_angle - steering_offset_) * adaptive_gear_ratio;
-  desired_steer_wheel =
-    std::min(std::max(desired_steer_wheel, -max_steering_wheel_), max_steering_wheel_);
-
-  /* check clear flag */
-  bool clear_override = false;
-  if (is_pacmod_enabled_ == true) {
-    is_clear_override_needed_ = false;
-  } else if (is_clear_override_needed_ == true) {
-    clear_override = true;
-  }
-
-  /* make engage cmd false when a driver overrides vehicle control */
-  if (!prev_override_ && global_rpt_ptr_->override_active) {
-    RCLCPP_WARN_THROTTLE(
-      get_logger(), *get_clock(), std::chrono::milliseconds(1000).count(),
-      "Pacmod is overridden, enable flag is back to false");
-    engage_cmd_ = false;
-  }
-  prev_override_ = global_rpt_ptr_->override_active;
-
-  /* make engage cmd false when vehicle report is timed out, e.g. E-stop is depressed */
-  const bool report_timed_out = ((current_time - global_rpt_ptr_->header.stamp).seconds() > 1.0);
-  if (report_timed_out) {
-    RCLCPP_WARN_THROTTLE(
-      get_logger(), *get_clock(), std::chrono::milliseconds(1000).count(),
-      "Pacmod report is timed out, enable flag is back to false");
-    engage_cmd_ = false;
-  }
-
-  /* make engage cmd false when vehicle fault is active */
-  if (global_rpt_ptr_->pacmod_sys_fault_active) {
-    RCLCPP_WARN_THROTTLE(
-      get_logger(), *get_clock(), std::chrono::milliseconds(1000).count(),
-      "Pacmod fault is active, enable flag is back to false");
-    engage_cmd_ = false;
-  }
-  RCLCPP_DEBUG(
-    get_logger(),
-    "is_pacmod_enabled_ = %d, is_clear_override_needed_ = %d, clear_override = "
-    "%d",
-    is_pacmod_enabled_, is_clear_override_needed_, clear_override);
-
-  /* check shift change */
-  const double brake_for_shift_trans = 0.7;
-  uint16_t desired_shift = gear_cmd_rpt_ptr_->output;
-  if (std::fabs(current_velocity) < 0.1) {  // velocity is low -> the shift can be changed
-    if (toPacmodShiftCmd(*gear_cmd_ptr_) != gear_cmd_rpt_ptr_->output) {  // need shift
-                                                                          // change.
-      desired_throttle = 0.0;
-      desired_brake = brake_for_shift_trans;  // set brake to change the shift
-      desired_shift = toPacmodShiftCmd(*gear_cmd_ptr_);
-      RCLCPP_DEBUG(
-        get_logger(), "Doing shift change. current = %d, desired = %d. set brake_cmd to %f",
-        gear_cmd_rpt_ptr_->output, toPacmodShiftCmd(*gear_cmd_ptr_), desired_brake);
-    }
-  }
-
-  /* publish accel cmd */
-  {
-    pacmod3_msgs::msg::SystemCmdFloat accel_cmd;
-    accel_cmd.header.frame_id = base_frame_id_;
-    accel_cmd.header.stamp = current_time;
-    accel_cmd.enable = engage_cmd_;
-    accel_cmd.ignore_overrides = false;
-    accel_cmd.clear_override = clear_override;
-    accel_cmd.command = std::max(0.0, std::min(desired_throttle, max_throttle_));
-    accel_cmd_pub_->publish(accel_cmd);
-  }
-
-  /* publish brake cmd */
-  {
-    pacmod3_msgs::msg::SystemCmdFloat brake_cmd;
-    brake_cmd.header.frame_id = base_frame_id_;
-    brake_cmd.header.stamp = current_time;
-    brake_cmd.enable = engage_cmd_;
-    brake_cmd.ignore_overrides = false;
-    brake_cmd.clear_override = clear_override;
-    brake_cmd.command = std::max(0.0, std::min(desired_brake, max_brake_));
-    brake_cmd_pub_->publish(brake_cmd);
-  }
-
-  /* publish steering cmd */
-  {
-    pacmod3_msgs::msg::SteeringCmd steer_cmd;
-    steer_cmd.header.frame_id = base_frame_id_;
-    steer_cmd.header.stamp = current_time;
-    steer_cmd.enable = engage_cmd_;
-    steer_cmd.ignore_overrides = false;
-    steer_cmd.clear_override = clear_override;
-    steer_cmd.rotation_rate = calcSteerWheelRateCmd(adaptive_gear_ratio);
-    steer_cmd.command = steerWheelRateLimiter(
-      desired_steer_wheel, prev_steer_cmd_.command, current_time, prev_steer_cmd_.header.stamp,
-      steer_cmd.rotation_rate, current_steer_wheel, engage_cmd_);
-    steer_cmd_pub_->publish(steer_cmd);
-    prev_steer_cmd_ = steer_cmd;
-  }
-
-  /* publish raw steering cmd for debug */
-  {
-    pacmod3_msgs::msg::SteeringCmd raw_steer_cmd;
-    raw_steer_cmd.header.frame_id = base_frame_id_;
-    raw_steer_cmd.header.stamp = current_time;
-    raw_steer_cmd.enable = engage_cmd_;
-    raw_steer_cmd.ignore_overrides = false;
-    raw_steer_cmd.clear_override = clear_override;
-    raw_steer_cmd.command = desired_steer_wheel;
-    raw_steer_cmd.rotation_rate =
-      control_cmd_ptr_->lateral.steering_tire_rotation_rate * adaptive_gear_ratio;
-    raw_steer_cmd_pub_->publish(raw_steer_cmd);
-  }
-
-  /* publish shift cmd */
-  {
-    pacmod3_msgs::msg::SystemCmdInt shift_cmd;
-    shift_cmd.header.frame_id = base_frame_id_;
-    shift_cmd.header.stamp = current_time;
-    shift_cmd.enable = engage_cmd_;
-    shift_cmd.ignore_overrides = false;
-    shift_cmd.clear_override = clear_override;
-    shift_cmd.command = getGearCmdForPreventChatter(desired_shift);
-    shift_cmd_pub_->publish(shift_cmd);
-  }
-
-  if (turn_indicators_cmd_ptr_ && hazard_lights_cmd_ptr_) {
-    /* publish shift cmd */
-    pacmod3_msgs::msg::SystemCmdInt turn_cmd;
-    turn_cmd.header.frame_id = base_frame_id_;
-    turn_cmd.header.stamp = current_time;
-    turn_cmd.enable = engage_cmd_;
-    turn_cmd.ignore_overrides = false;
-    turn_cmd.clear_override = clear_override;
-    turn_cmd.command =
-      toPacmodTurnCmdWithHazardRecover(*turn_indicators_cmd_ptr_, *hazard_lights_cmd_ptr_);
-    turn_cmd_pub_->publish(turn_cmd);
-  }
-}
-
-double PacmodInterface::calcSteerWheelRateCmd(const double gear_ratio)
-{
-  const auto current_vel =
-    std::fabs(calculateVehicleVelocity(*wheel_speed_rpt_ptr_, *gear_cmd_rpt_ptr_));
-
-  // send low steer rate at low speed
-  if (current_vel < std::numeric_limits<double>::epsilon()) {
-    return steering_wheel_rate_stopped_;
-  } else if (current_vel < low_vel_thresh_) {
-    return steering_wheel_rate_low_vel_;
-  }
-
-  if (!enable_steering_rate_control_) {
-    return max_steering_wheel_rate_;
-  }
-
-  constexpr double margin = 1.5;
-  const double rate = margin * control_cmd_ptr_->lateral.steering_tire_rotation_rate * gear_ratio;
-  return std::min(std::max(std::fabs(rate), min_steering_wheel_rate_), max_steering_wheel_rate_);
-}
-
 double PacmodInterface::calculateVehicleVelocity(
   const pacmod3_msgs::msg::WheelSpeedRpt & wheel_speed_rpt,
   const pacmod3_msgs::msg::SystemRptInt & shift_rpt)
@@ -572,26 +271,6 @@ double PacmodInterface::calculateVariableGearRatio(const double vel, const doubl
 {
   return std::max(
     1e-5, vgr_coef_a_ + vgr_coef_b_ * vel * vel - vgr_coef_c_ * std::fabs(steer_wheel));
-}
-
-uint16_t PacmodInterface::toPacmodShiftCmd(const autoware_vehicle_msgs::msg::GearCommand & gear_cmd)
-{
-  using pacmod3_msgs::msg::SystemCmdInt;
-
-  if (gear_cmd.command == autoware_vehicle_msgs::msg::GearCommand::PARK) {
-    return SystemCmdInt::SHIFT_PARK;
-  }
-  if (gear_cmd.command == autoware_vehicle_msgs::msg::GearCommand::REVERSE) {
-    return SystemCmdInt::SHIFT_REVERSE;
-  }
-  if (gear_cmd.command == autoware_vehicle_msgs::msg::GearCommand::DRIVE) {
-    return SystemCmdInt::SHIFT_FORWARD;
-  }
-  if (gear_cmd.command == autoware_vehicle_msgs::msg::GearCommand::LOW) {
-    return SystemCmdInt::SHIFT_LOW;
-  }
-
-  return SystemCmdInt::SHIFT_NONE;
 }
 
 uint16_t PacmodInterface::getGearCmdForPreventChatter(uint16_t gear_command)
@@ -645,69 +324,6 @@ std::optional<int32_t> PacmodInterface::toAutowareShiftReport(
   return {};
 }
 
-uint16_t PacmodInterface::toPacmodTurnCmd(
-  const autoware_vehicle_msgs::msg::TurnIndicatorsCommand & turn,
-  const autoware_vehicle_msgs::msg::HazardLightsCommand & hazard)
-{
-  using autoware_vehicle_msgs::msg::HazardLightsCommand;
-  using autoware_vehicle_msgs::msg::TurnIndicatorsCommand;
-  using pacmod3_msgs::msg::SystemCmdInt;
-
-  // NOTE: hazard lights command has a highest priority here.
-  if (hazard.command == HazardLightsCommand::ENABLE) {
-    return SystemCmdInt::TURN_HAZARDS;
-  }
-  if (turn.command == TurnIndicatorsCommand::ENABLE_LEFT) {
-    return SystemCmdInt::TURN_LEFT;
-  }
-  if (turn.command == TurnIndicatorsCommand::ENABLE_RIGHT) {
-    return SystemCmdInt::TURN_RIGHT;
-  }
-  return SystemCmdInt::TURN_NONE;
-}
-
-uint16_t PacmodInterface::toPacmodTurnCmdWithHazardRecover(
-  const autoware_vehicle_msgs::msg::TurnIndicatorsCommand & turn,
-  const autoware_vehicle_msgs::msg::HazardLightsCommand & hazard)
-{
-  using pacmod3_msgs::msg::SystemRptInt;
-
-  if (!engage_cmd_ || turn_rpt_ptr_->command == turn_rpt_ptr_->output) {
-    last_shift_inout_matched_time_ = this->now();
-    return toPacmodTurnCmd(turn, hazard);
-  }
-
-  if ((this->now() - last_shift_inout_matched_time_).seconds() < hazard_thresh_time_) {
-    return toPacmodTurnCmd(turn, hazard);
-  }
-
-  // hazard recover mode
-  if (hazard_recover_count_ > hazard_recover_cmd_num_) {
-    last_shift_inout_matched_time_ = this->now();
-    hazard_recover_count_ = 0;
-  }
-  hazard_recover_count_++;
-
-  if (
-    turn_rpt_ptr_->command != SystemRptInt::TURN_HAZARDS &&
-    turn_rpt_ptr_->output == SystemRptInt::TURN_HAZARDS) {
-    // publish hazard commands for turning off the hazard lights
-    return SystemRptInt::TURN_HAZARDS;
-  } else if (  // NOLINT
-    turn_rpt_ptr_->command == SystemRptInt::TURN_HAZARDS &&
-    turn_rpt_ptr_->output != SystemRptInt::TURN_HAZARDS) {
-    // publish none commands for turning on the hazard lights
-    return SystemRptInt::TURN_NONE;
-  } else {
-    // something wrong
-    RCLCPP_ERROR_STREAM(
-      get_logger(), "turn signal command and output do not match. "
-                      << "COMMAND: " << turn_rpt_ptr_->command
-                      << "; OUTPUT: " << turn_rpt_ptr_->output);
-    return toPacmodTurnCmd(turn, hazard);
-  }
-}
-
 int32_t PacmodInterface::toAutowareTurnIndicatorsReport(
   const pacmod3_msgs::msg::SystemRptInt & turn)
 {
@@ -737,73 +353,6 @@ int32_t PacmodInterface::toAutowareHazardLightsReport(
   return HazardLightsReport::DISABLE;
 }
 
-double PacmodInterface::steerWheelRateLimiter(
-  const double current_steer_cmd, const double prev_steer_cmd,
-  const rclcpp::Time & current_steer_time, const rclcpp::Time & prev_steer_time,
-  const double steer_rate, const double current_steer_output, const bool engage)
-{
-  if (!engage) {
-    // return current steer as steer command ( do not apply steer rate filter )
-    return current_steer_output;
-  }
-
-  const double dsteer = current_steer_cmd - prev_steer_cmd;
-  const double dt = std::max(0.0, (current_steer_time - prev_steer_time).seconds());
-  const double max_dsteer = std::fabs(steer_rate) * dt;
-  const double limited_steer_cmd =
-    prev_steer_cmd + std::min(std::max(-max_dsteer, dsteer), max_dsteer);
-  return limited_steer_cmd;
-}
-
-pacmod3_msgs::msg::SystemCmdInt PacmodInterface::createClearOverrideDoorCommand()
-{
-  pacmod3_msgs::msg::SystemCmdInt door_cmd;
-  door_cmd.header.frame_id = "base_link";
-  door_cmd.header.stamp = this->now();
-  door_cmd.clear_override = true;
-  return door_cmd;
-}
-
-pacmod3_msgs::msg::SystemCmdInt PacmodInterface::createDoorCommand(const bool open)
-{
-  pacmod3_msgs::msg::SystemCmdInt door_cmd;
-  door_cmd.header.frame_id = "base_link";
-  door_cmd.header.stamp = this->now();
-  door_cmd.enable = true;
-
-  if (open) {
-    door_cmd.command = pacmod3_msgs::msg::SystemCmdInt::DOOR_OPEN;
-  } else {
-    door_cmd.command = pacmod3_msgs::msg::SystemCmdInt::DOOR_CLOSE;
-  }
-  return door_cmd;
-}
-
-void PacmodInterface::setDoor(
-  const tier4_external_api_msgs::srv::SetDoor::Request::SharedPtr request,
-  const tier4_external_api_msgs::srv::SetDoor::Response::SharedPtr response)
-{
-  if (!engage_cmd_) {
-    // when the vehicle mode is manual, ignore the request.
-    response->status.code = tier4_external_api_msgs::msg::ResponseStatus::IGNORED;
-    response->status.message = "Current vehicle mode is manual. The request is ignored.";
-    return;
-  }
-
-  // open/close the door
-  door_cmd_pub_->publish(createClearOverrideDoorCommand());
-  rclcpp::Rate(10.0).sleep();  // avoid message loss
-  door_cmd_pub_->publish(createDoorCommand(request->open));
-  response->status.code = tier4_external_api_msgs::msg::ResponseStatus::SUCCESS;
-
-  if (request->open) {
-    // open the door
-    response->status.message = "Success to open the door.";
-  } else {
-    // close the door
-    response->status.message = "Success to close the door.";
-  }
-}
 
 tier4_api_msgs::msg::DoorStatus PacmodInterface::toAutowareDoorStatusMsg(
   const pacmod3_msgs::msg::SystemRptInt & msg_ptr)

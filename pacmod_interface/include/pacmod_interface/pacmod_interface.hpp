@@ -59,10 +59,6 @@
 class PacmodInterface : public rclcpp::Node
 {
 public:
-  using ActuationCommandStamped = tier4_vehicle_msgs::msg::ActuationCommandStamped;
-  using ActuationStatusStamped = tier4_vehicle_msgs::msg::ActuationStatusStamped;
-  using SteeringWheelStatusStamped = tier4_vehicle_msgs::msg::SteeringWheelStatusStamped;
-  using ControlModeCommand = autoware_vehicle_msgs::srv::ControlModeCommand;
   PacmodInterface();
 
 private:
@@ -73,15 +69,6 @@ private:
     PacmodFeedbacksSyncPolicy;
 
   /* subscribers */
-  // From Autoware
-  rclcpp::Subscription<autoware_control_msgs::msg::Control>::SharedPtr control_cmd_sub_;
-  rclcpp::Subscription<autoware_vehicle_msgs::msg::GearCommand>::SharedPtr gear_cmd_sub_;
-  rclcpp::Subscription<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>::SharedPtr
-    turn_indicators_cmd_sub_;
-  rclcpp::Subscription<autoware_vehicle_msgs::msg::HazardLightsCommand>::SharedPtr
-    hazard_lights_cmd_sub_;
-  rclcpp::Subscription<ActuationCommandStamped>::SharedPtr actuation_cmd_sub_;
-  rclcpp::Subscription<tier4_vehicle_msgs::msg::VehicleEmergencyStamped>::SharedPtr emergency_sub_;
 
   // From Pacmod
   rclcpp::Subscription<pacmod3_msgs::msg::SystemRptInt>::SharedPtr rear_door_rpt_sub_;
@@ -140,8 +127,6 @@ private:
   double accel_pedal_offset_;  // offset of accel pedal value
   double brake_pedal_offset_;  // offset of brake pedal value
 
-  double emergency_brake_;              // brake command when emergency [m/s^2]
-  bool use_external_emergency_brake_;   // set to true to not use emergency_brake_
   double max_throttle_;                 // max throttle [0~1]
   double max_brake_;                    // max throttle [0~1]
   double max_steering_wheel_;           // max steering wheel angle [rad]
@@ -166,12 +151,6 @@ private:
   rclcpp::Service<ControlModeCommand>::SharedPtr control_mode_server_;
 
   /* input values */
-  ActuationCommandStamped::ConstSharedPtr actuation_cmd_ptr_;
-  autoware_control_msgs::msg::Control::ConstSharedPtr control_cmd_ptr_;
-  autoware_vehicle_msgs::msg::TurnIndicatorsCommand::ConstSharedPtr turn_indicators_cmd_ptr_;
-  autoware_vehicle_msgs::msg::HazardLightsCommand::ConstSharedPtr hazard_lights_cmd_ptr_;
-  autoware_vehicle_msgs::msg::GearCommand::ConstSharedPtr gear_cmd_ptr_;
-
   pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr steer_wheel_rpt_ptr_;  // [rad]
   pacmod3_msgs::msg::WheelSpeedRpt::ConstSharedPtr wheel_speed_rpt_ptr_;   // [m/s]
   pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr accel_rpt_ptr_;
@@ -181,27 +160,10 @@ private:
   pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr turn_rpt_ptr_;
   pacmod3_msgs::msg::SteeringCmd prev_steer_cmd_;
 
-  bool engage_cmd_{false};
-  bool is_emergency_{false};
-  rclcpp::Time control_command_received_time_;
-  rclcpp::Time actuation_command_received_time_;
-  rclcpp::Time last_shift_inout_matched_time_;
   std::shared_ptr<rclcpp::Time> last_time_to_change_gear_ptr_;
   uint16_t prev_gear_command_ = pacmod3_msgs::msg::SystemCmdInt::SHIFT_PARK;
 
   /* callbacks */
-  void callbackActuationCmd(const ActuationCommandStamped::ConstSharedPtr msg);
-  void callbackControlCmd(const autoware_control_msgs::msg::Control::ConstSharedPtr msg);
-
-  void callbackEmergencyCmd(
-    const tier4_vehicle_msgs::msg::VehicleEmergencyStamped::ConstSharedPtr msg);
-
-  void callbackGearCmd(const autoware_vehicle_msgs::msg::GearCommand::ConstSharedPtr msg);
-  void callbackTurnIndicatorsCommand(
-    const autoware_vehicle_msgs::msg::TurnIndicatorsCommand::ConstSharedPtr msg);
-  void callbackHazardLightsCommand(
-    const autoware_vehicle_msgs::msg::HazardLightsCommand::ConstSharedPtr msg);
-  void callbackEngage(const autoware_vehicle_msgs::msg::Engage::ConstSharedPtr msg);
   void callbackRearDoor(const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr rear_door_rpt);
   void callbackPacmodRpt(
     const pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr steer_wheel_rpt,
@@ -213,38 +175,19 @@ private:
     const pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr global_rpt);
 
   /*  functions */
-  void publishCommands();
   double calculateVehicleVelocity(
     const pacmod3_msgs::msg::WheelSpeedRpt & wheel_speed_rpt,
     const pacmod3_msgs::msg::SystemRptInt & shift_rpt);
   double calculateVariableGearRatio(const double vel, const double steer_wheel);
-  double calcSteerWheelRateCmd(const double gear_ratio);
-  uint16_t toPacmodShiftCmd(const autoware_vehicle_msgs::msg::GearCommand & gear_cmd);
   uint16_t getGearCmdForPreventChatter(uint16_t gear_command);
-  uint16_t toPacmodTurnCmd(
-    const autoware_vehicle_msgs::msg::TurnIndicatorsCommand & turn,
-    const autoware_vehicle_msgs::msg::HazardLightsCommand & hazard);
-  uint16_t toPacmodTurnCmdWithHazardRecover(
-    const autoware_vehicle_msgs::msg::TurnIndicatorsCommand & turn,
-    const autoware_vehicle_msgs::msg::HazardLightsCommand & hazard);
 
   std::optional<int32_t> toAutowareShiftReport(const pacmod3_msgs::msg::SystemRptInt & shift);
   int32_t toAutowareTurnIndicatorsReport(const pacmod3_msgs::msg::SystemRptInt & turn);
   int32_t toAutowareHazardLightsReport(const pacmod3_msgs::msg::SystemRptInt & turn);
-  double steerWheelRateLimiter(
-    const double current_steer_cmd, const double prev_steer_cmd,
-    const rclcpp::Time & current_steer_time, const rclcpp::Time & prev_steer_time,
-    const double steer_rate, const double current_steer_output, const bool engage);
   pacmod3_msgs::msg::SystemCmdInt createClearOverrideDoorCommand();
   pacmod3_msgs::msg::SystemCmdInt createDoorCommand(const bool open);
-  void setDoor(
-    const tier4_external_api_msgs::srv::SetDoor::Request::SharedPtr request,
-    const tier4_external_api_msgs::srv::SetDoor::Response::SharedPtr response);
-  tier4_api_msgs::msg::DoorStatus toAutowareDoorStatusMsg(
+  vehicle_msgs::msg::DoorStatus toAutowareDoorStatusMsg(
     const pacmod3_msgs::msg::SystemRptInt & msg_ptr);
-  void onControlModeRequest(
-    const ControlModeCommand::Request::SharedPtr request,
-    const ControlModeCommand::Response::SharedPtr response);
 };
 
 #endif  // PACMOD_INTERFACE__PACMOD_INTERFACE_HPP_

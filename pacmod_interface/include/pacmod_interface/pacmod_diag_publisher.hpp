@@ -18,7 +18,6 @@
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include <autoware_control_msgs/msg/control.hpp>
 #include <can_msgs/msg/frame.hpp>
 #include <geometry_msgs/msg/accel_with_covariance_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
@@ -42,7 +41,6 @@
 #include <utility>
 #include <vector>
 
-using autoware_control_msgs::msg::Control;
 using geometry_msgs::msg::AccelWithCovarianceStamped;
 using nav_msgs::msg::Odometry;
 
@@ -76,7 +74,6 @@ private:
 
   // Acceleration-related Topics
   rclcpp::Subscription<AccelWithCovarianceStamped>::SharedPtr current_acc_sub_;
-  rclcpp::Subscription<Control>::SharedPtr control_cmd_sub_;
   rclcpp::Subscription<Odometry>::SharedPtr odom_sub_;
 
   /* ros parameters */
@@ -122,7 +119,6 @@ private:
 
   void callbackAccel(const AccelWithCovarianceStamped::ConstSharedPtr accel);
   void callbackOdometry(const Odometry::SharedPtr odom);
-  void callbackControlCmd(const Control::ConstSharedPtr control_cmd);
 
   /* functions */
   void checkPacmodMsgs(diagnostic_updater::DiagnosticStatusWrapper & stat);
