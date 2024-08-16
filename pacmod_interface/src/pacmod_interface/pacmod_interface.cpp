@@ -62,6 +62,10 @@ PacmodInterface::PacmodInterface()
   /* parameter for preventing gear chattering */
   margin_time_for_gear_change_ = declare_parameter("margin_time_for_gear_change", 2.0);
 
+  /* parameter for steering conversion */
+  enable_pub_steer_ = declare_parameter("enable_pub_steer", true);
+  convert_steer_command_ = declare_parameter("convert_steer_command", true);
+
   /* initialize */
   prev_steer_cmd_.header.stamp = this->now();
   prev_steer_cmd_.command = 0.0;
@@ -321,7 +325,7 @@ void PacmodInterface::callbackPacmodRpt(
   }
 
   /* publish current status */
-  {
+  if (enable_pub_steer_) {
     autoware_vehicle_msgs::msg::SteeringReport steer_msg;
     steer_msg.stamp = header.stamp;
     steer_msg.steering_tire_angle = current_steer;
@@ -330,11 +334,14 @@ void PacmodInterface::callbackPacmodRpt(
 
   /* publish control status */
   {
+    // NOTE:
+    // actuation status must be the same data format as the input data.
+    // raw_vehicle_cmd_converter converts from steering_wheel_angle to steering_tire_angle.
     ActuationStatusStamped actuation_status;
     actuation_status.header = header;
     actuation_status.status.accel_status = accel_rpt_ptr_->output;
     actuation_status.status.brake_status = brake_rpt_ptr_->output;
-    actuation_status.status.steer_status = current_steer;
+    actuation_status.status.steer_status = current_steer_wheel;
     actuation_status_pub_->publish(actuation_status);
   }
 
@@ -396,11 +403,17 @@ void PacmodInterface::publishCommands()
   const double current_steer_wheel = steer_wheel_rpt_ptr_->output;
 
   /* calculate desired steering wheel */
-  double adaptive_gear_ratio = calculateVariableGearRatio(current_velocity, current_steer_wheel);
-  double desired_steer_wheel =
-    (control_cmd_ptr_->lateral.steering_tire_angle - steering_offset_) * adaptive_gear_ratio;
-  desired_steer_wheel =
-    std::min(std::max(desired_steer_wheel, -max_steering_wheel_), max_steering_wheel_);
+  const double adaptive_gear_ratio =
+    calculateVariableGearRatio(current_velocity, current_steer_wheel);
+  const double desired_steer_wheel = std::invoke([&]() -> double {
+    double desired_steer_wheel{0.0};
+    if (convert_steer_command_) {
+      (control_cmd_ptr_->lateral.steering_tire_angle - steering_offset_) * adaptive_gear_ratio;
+    } else {
+      desired_steer_wheel = actuation_cmd_ptr_->actuation.steer_cmd;
+    }
+    return std::min(std::max(desired_steer_wheel, -max_steering_wheel_), max_steering_wheel_);
+  });
 
   /* check clear flag */
   bool clear_override = false;
