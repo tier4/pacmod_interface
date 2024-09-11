@@ -408,7 +408,8 @@ void PacmodInterface::publishCommands()
   const double desired_steer_wheel = std::invoke([&]() -> double {
     double desired_steer_wheel{0.0};
     if (convert_steer_command_) {
-      (control_cmd_ptr_->lateral.steering_tire_angle - steering_offset_) * adaptive_gear_ratio;
+      desired_steer_wheel =
+        (control_cmd_ptr_->lateral.steering_tire_angle - steering_offset_) * adaptive_gear_ratio;
     } else {
       desired_steer_wheel = actuation_cmd_ptr_->actuation.steer_cmd;
     }
