@@ -19,3 +19,5 @@
     accel_pedal_offset: 0.0
     brake_pedal_offset: 0.0
     margin_time_for_gear_change: 2.0
+    enable_pub_steer: true
+    convert_steer_command: true
