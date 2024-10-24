@@ -159,6 +159,13 @@ private:
 
   double margin_time_for_gear_change_;  // [s]
 
+  // steer command conversion
+  // if false, it is expected to be converted from and published actuation_status in
+  // raw_vehicle_cmd_converter
+  bool enable_pub_steer_ = true;  // flag to publish steer_cmd
+  // if false, it is expected to be converted from and published actuation_status in
+  bool convert_steer_command_ = true;  // flag to convert steer command
+
   autoware::vehicle_info_utils::VehicleInfo vehicle_info_;
 
   // Service
