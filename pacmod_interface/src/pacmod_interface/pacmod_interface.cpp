@@ -411,7 +411,8 @@ void PacmodInterface::publishCommands()
       // NOTE:
       // It is assumed that steer_cmd is send as actuation_cmd without being converted from
       // raw_vehicle_cmd_converter.
-      desired_steer_wheel = (actuation.steer_cmd - steering_offset_) * adaptive_gear_ratio;
+      desired_steer_wheel =
+        (actuation_cmd_ptr_->actuation.steer_cmd - steering_offset_) * adaptive_gear_ratio;
     } else {
       desired_steer_wheel = actuation_cmd_ptr_->actuation.steer_cmd;
     }
