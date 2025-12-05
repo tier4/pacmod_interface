@@ -2,9 +2,45 @@
 
 `pacmod_interface` is the package to connect Autoware with Pacmod.
 
-## Input / Output
+## Installation
 
-### Input topics
+### Dependencies
+
+```bash
+# Either source your ROS2 distro setup.bash, or set the rosdistro variable directly
+source source /opt/ros/humble/setup.bash
+# Or:
+export rosdistro=humble
+
+# Then install
+sudo apt install apt-transport-https
+sudo sh -c 'echo "deb [trusted=yes] https://s3.amazonaws.com/autonomoustuff-repo/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/autonomoustuff-public.list'
+sudo apt update
+sudo apt install ros-${rosdistro}-pacmod3
+```
+
+**References:**
+
+- <https://github.com/astuff/docker-builds/blob/master/ros2/humble/ros-core/Dockerfile>
+
+### Build
+
+Assuming you have already cloned [Autoware repository](https://github.com/autowarefoundation/autoware) and have set up the workspace:
+
+```bash
+cd autoware
+vcs import src < extra-packages.repos
+
+source /opt/ros/humble/setup.bash
+rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
+colcon build --symlink-install --event-handlers=console_cohesion+ --cmake-args -DCMAKE_BUILD_TYPE=Release
+```
+
+## Interfaces
+
+### Input / Output
+
+#### Input topics
 
 - From Autoware
 
@@ -30,7 +66,7 @@
   | `/pacmod/turn_rpt`        | pacmod3_msgs::msg::SystemRptInt   | current turn indicators status                                          |
   | `/pacmod/global_rpt`      | pacmod3_msgs::msg::GlobalRpt      | current status of other parameters (e.g. override_active, can_time_out) |
 
-### Output topics
+#### Output topics
 
 - To Pacmod
 
@@ -55,7 +91,7 @@
   | `/vehicle/status/hazard_lights_status`   | autoware_vehicle_msgs::msg::HazardLightsReport     | hazard lights status                                 |
   | `/vehicle/status/actuation_status`       | autoware_vehicle_msgs::msg::ActuationStatusStamped | actuation (accel/brake pedal, steering wheel) status |
 
-## ROS Parameters
+### ROS Parameters
 
 | Name                              | Type   | Description                                                                                  |
 | --------------------------------- | ------ | -------------------------------------------------------------------------------------------- |
