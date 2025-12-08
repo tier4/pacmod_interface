@@ -71,10 +71,11 @@ PacmodDiagPublisher::PacmodDiagPublisher()
       PacmodFeedbacksSyncPolicy(10), *steer_wheel_rpt_sub_, *wheel_speed_rpt_sub_, *accel_rpt_sub_,
       *brake_rpt_sub_, *shift_rpt_sub_, *turn_rpt_sub_, *global_rpt_sub_);
 
-  pacmod_feedbacks_sync_->registerCallback(std::bind(
-    &PacmodDiagPublisher::callbackPacmodRpt, this, std::placeholders::_1, std::placeholders::_2,
-    std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6,
-    std::placeholders::_7));
+  pacmod_feedbacks_sync_->registerCallback(
+    std::bind(
+      &PacmodDiagPublisher::callbackPacmodRpt, this, std::placeholders::_1, std::placeholders::_2,
+      std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6,
+      std::placeholders::_7));
 
   /* acceleration-related topics */
   current_acc_sub_ = create_subscription<AccelWithCovarianceStamped>(
