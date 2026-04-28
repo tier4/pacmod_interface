@@ -17,11 +17,30 @@
 
 #include <memory>
 
+#ifdef USE_AGNOCAST_ENABLED
+#include "agnocast/agnocast_callback_isolated_executor.hpp"
+
+#include <cstdlib>
+#endif
+
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<PacmodInterface>();
+
+#ifdef USE_AGNOCAST_ENABLED
+  const char * enable_agnocast = std::getenv("ENABLE_AGNOCAST");
+  if (enable_agnocast && std::string(enable_agnocast) == "1") {
+    agnocast::CallbackIsolatedAgnocastExecutor executor;
+    executor.add_node(node);
+    executor.spin();
+  } else {
+    rclcpp::spin(node);
+  }
+#else
   rclcpp::spin(node);
+#endif
+
   rclcpp::shutdown();
   return 0;
 }

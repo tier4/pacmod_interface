@@ -43,6 +43,12 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+if("$ENV{ENABLE_AGNOCAST}")
+  find_package(agnocastlib REQUIRED)
+  add_definitions(-DUSE_AGNOCAST_ENABLED)
+  ament_target_dependencies(pacmod_interface agnocastlib)
+endif()
+
 ament_auto_package(
   INSTALL_TO_SHARE
   launch
