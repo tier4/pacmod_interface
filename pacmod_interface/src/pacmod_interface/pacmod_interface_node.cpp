@@ -21,6 +21,7 @@
 #include "agnocast/agnocast_callback_isolated_executor.hpp"
 
 #include <cstdlib>
+#include <string>
 #endif
 
 int main(int argc, char ** argv)
