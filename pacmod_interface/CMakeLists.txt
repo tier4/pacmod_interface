@@ -13,6 +13,15 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+set(ENABLE_AGNOCAST_DEFAULT "$ENV{ENABLE_AGNOCAST}")
+if(ENABLE_AGNOCAST_DEFAULT STREQUAL "1")
+  set(ENABLE_AGNOCAST_DEFAULT "ON")
+else()
+  set(ENABLE_AGNOCAST_DEFAULT "OFF")
+endif()
+
+option(ENABLE_AGNOCAST "Enable Agnocast components" ${ENABLE_AGNOCAST_DEFAULT})
+
 ament_auto_add_executable(pacmod_additional_debug_publisher
   src/pacmod_additional_debug_publisher/pacmod_additional_debug_publisher_node.cpp
   src/pacmod_additional_debug_publisher/pacmod_additional_debug_publisher_main.cpp
@@ -43,9 +52,9 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-if("$ENV{ENABLE_AGNOCAST}")
+if(ENABLE_AGNOCAST)
   find_package(agnocastlib REQUIRED)
-  add_definitions(-DUSE_AGNOCAST_ENABLED)
+  target_compile_definitions(pacmod_interface PRIVATE USE_AGNOCAST_ENABLED)
   ament_target_dependencies(pacmod_interface agnocastlib)
 endif()
 
