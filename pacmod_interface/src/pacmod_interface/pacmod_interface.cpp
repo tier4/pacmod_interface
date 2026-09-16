@@ -799,28 +799,16 @@ void PacmodInterface::setDoor(
   const autoware_adapi_v1_msgs::srv::SetDoorCommand::Request::SharedPtr request,
   const autoware_adapi_v1_msgs::srv::SetDoorCommand::Response::SharedPtr response)
 {
-  using autoware_adapi_v1_msgs::msg::DoorCommand;
-  using autoware_adapi_v1_msgs::msg::ResponseStatus;
-
-  response->status.success = false;
   if (!engage_cmd_) {
     // when the vehicle mode is manual, ignore the request.
-    response->status.code = ResponseStatus::UNKNOWN;
+    response->status.code = autoware_adapi_v1_msgs::msg::ResponseStatus::UNKNOWN;
     response->status.message = "Current vehicle mode is manual. The request is ignored.";
     return;
   }
 
-  if (
-    request->doors.size() != 1 || request->doors.front().index != 0 ||
-    (request->doors.front().command != DoorCommand::OPEN &&
-     request->doors.front().command != DoorCommand::CLOSE)) {
-    response->status.code = ResponseStatus::PARAMETER_ERROR;
-    response->status.message = "Expected one OPEN or CLOSE command for door index 0.";
-    return;
-  }
-
   // open/close the door
-  const bool open = request->doors.front().command == DoorCommand::OPEN;
+  const bool open =
+    request->doors.front().command == autoware_adapi_v1_msgs::msg::DoorCommand::OPEN;
   door_cmd_pub_->publish(createClearOverrideDoorCommand());
   rclcpp::Rate(10.0).sleep();  // avoid message loss
   door_cmd_pub_->publish(createDoorCommand(open));
