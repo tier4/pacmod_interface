@@ -17,8 +17,10 @@
 
 #include <autoware_vehicle_info_utils/vehicle_info_utils.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <tier4_api_utils/tier4_api_utils.hpp>
 
+#include <autoware_adapi_v1_msgs/msg/door_status_array.hpp>
+#include <autoware_adapi_v1_msgs/srv/get_door_layout.hpp>
+#include <autoware_adapi_v1_msgs/srv/set_door_command.hpp>
 #include <autoware_control_msgs/msg/control.hpp>
 #include <autoware_vehicle_msgs/msg/control_mode_report.hpp>
 #include <autoware_vehicle_msgs/msg/engage.hpp>
@@ -38,8 +40,6 @@
 #include <pacmod3_msgs/msg/system_rpt_float.hpp>
 #include <pacmod3_msgs/msg/system_rpt_int.hpp>
 #include <pacmod3_msgs/msg/wheel_speed_rpt.hpp>
-#include <tier4_api_msgs/msg/door_status.hpp>
-#include <tier4_external_api_msgs/srv/set_door.hpp>
 #include <tier4_vehicle_msgs/msg/actuation_command_stamped.hpp>
 #include <tier4_vehicle_msgs/msg/actuation_status_stamped.hpp>
 #include <tier4_vehicle_msgs/msg/steering_wheel_status_stamped.hpp>
@@ -119,7 +119,7 @@ private:
     hazard_lights_status_pub_;
   rclcpp::Publisher<ActuationStatusStamped>::SharedPtr actuation_status_pub_;
   rclcpp::Publisher<SteeringWheelStatusStamped>::SharedPtr steering_wheel_status_pub_;
-  rclcpp::Publisher<tier4_api_msgs::msg::DoorStatus>::SharedPtr door_status_pub_;
+  rclcpp::Publisher<autoware_adapi_v1_msgs::msg::DoorStatusArray>::SharedPtr door_status_pub_;
 
   rclcpp::TimerBase::SharedPtr timer_;
 
@@ -162,7 +162,8 @@ private:
   autoware::vehicle_info_utils::VehicleInfo vehicle_info_;
 
   // Service
-  tier4_api_utils::Service<tier4_external_api_msgs::srv::SetDoor>::SharedPtr srv_;
+  rclcpp::Service<autoware_adapi_v1_msgs::srv::SetDoorCommand>::SharedPtr srv_;
+  rclcpp::Service<autoware_adapi_v1_msgs::srv::GetDoorLayout>::SharedPtr door_layout_srv_;
   rclcpp::Service<ControlModeCommand>::SharedPtr control_mode_server_;
 
   /* input values */
@@ -237,10 +238,13 @@ private:
     const double steer_rate, const double current_steer_output, const bool engage);
   pacmod3_msgs::msg::SystemCmdInt createClearOverrideDoorCommand();
   pacmod3_msgs::msg::SystemCmdInt createDoorCommand(const bool open);
+  void getDoorLayout(
+    const autoware_adapi_v1_msgs::srv::GetDoorLayout::Request::SharedPtr request,
+    const autoware_adapi_v1_msgs::srv::GetDoorLayout::Response::SharedPtr response);
   void setDoor(
-    const tier4_external_api_msgs::srv::SetDoor::Request::SharedPtr request,
-    const tier4_external_api_msgs::srv::SetDoor::Response::SharedPtr response);
-  tier4_api_msgs::msg::DoorStatus toAutowareDoorStatusMsg(
+    const autoware_adapi_v1_msgs::srv::SetDoorCommand::Request::SharedPtr request,
+    const autoware_adapi_v1_msgs::srv::SetDoorCommand::Response::SharedPtr response);
+  autoware_adapi_v1_msgs::msg::DoorStatus toAutowareDoorStatusMsg(
     const pacmod3_msgs::msg::SystemRptInt & msg_ptr);
   void onControlModeRequest(
     const ControlModeCommand::Request::SharedPtr request,
