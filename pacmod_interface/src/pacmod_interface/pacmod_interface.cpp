@@ -156,15 +156,17 @@ PacmodInterface::PacmodInterface()
     create_publisher<ActuationStatusStamped>("/vehicle/status/actuation_status", 1);
   steering_wheel_status_pub_ =
     create_publisher<SteeringWheelStatusStamped>("/vehicle/status/steering_wheel_status", 1);
-  door_status_pub_ =
-    create_publisher<tier4_api_msgs::msg::DoorStatus>("/vehicle/status/door_status", 1);
+  door_status_pub_ = create_publisher<autoware_adapi_v1_msgs::msg::DoorStatusArray>(
+    "/vehicle/doors/status", rclcpp::QoS(1).transient_local());
 
   /* service */
   //  From autoware
-  tier4_api_utils::ServiceProxyNodeInterface proxy(this);
-  srv_ = proxy.create_service<tier4_external_api_msgs::srv::SetDoor>(
-    "/api/vehicle/set/door",
+  srv_ = create_service<autoware_adapi_v1_msgs::srv::SetDoorCommand>(
+    "/vehicle/doors/command",
     std::bind(&PacmodInterface::setDoor, this, std::placeholders::_1, std::placeholders::_2));
+  door_layout_srv_ = create_service<autoware_adapi_v1_msgs::srv::GetDoorLayout>(
+    "/vehicle/doors/layout",
+    std::bind(&PacmodInterface::getDoorLayout, this, std::placeholders::_1, std::placeholders::_2));
 
   // Timer
   const auto period_ns = rclcpp::Rate(loop_rate_).period();
@@ -236,7 +238,10 @@ void PacmodInterface::callbackRearDoor(
   const pacmod3_msgs::msg::SystemRptInt::ConstSharedPtr rear_door_rpt)
 {
   /* publish current door status */
-  door_status_pub_->publish(toAutowareDoorStatusMsg(*rear_door_rpt));
+  autoware_adapi_v1_msgs::msg::DoorStatusArray status;
+  status.stamp = rear_door_rpt->header.stamp;
+  status.doors.push_back(toAutowareDoorStatusMsg(*rear_door_rpt));
+  door_status_pub_->publish(status);
 }
 
 void PacmodInterface::callbackPacmodRpt(
@@ -779,24 +784,37 @@ pacmod3_msgs::msg::SystemCmdInt PacmodInterface::createDoorCommand(const bool op
   return door_cmd;
 }
 
+void PacmodInterface::getDoorLayout(
+  const autoware_adapi_v1_msgs::srv::GetDoorLayout::Request::SharedPtr,
+  const autoware_adapi_v1_msgs::srv::GetDoorLayout::Response::SharedPtr response)
+{
+  using autoware_adapi_v1_msgs::msg::DoorLayout;
+  response->doors.resize(1);
+  response->doors[0].description = "Rear passenger door";
+  response->doors[0].roles = {DoorLayout::GET_ON, DoorLayout::GET_OFF};
+  response->status.success = true;
+}
+
 void PacmodInterface::setDoor(
-  const tier4_external_api_msgs::srv::SetDoor::Request::SharedPtr request,
-  const tier4_external_api_msgs::srv::SetDoor::Response::SharedPtr response)
+  const autoware_adapi_v1_msgs::srv::SetDoorCommand::Request::SharedPtr request,
+  const autoware_adapi_v1_msgs::srv::SetDoorCommand::Response::SharedPtr response)
 {
   if (!engage_cmd_) {
     // when the vehicle mode is manual, ignore the request.
-    response->status.code = tier4_external_api_msgs::msg::ResponseStatus::IGNORED;
+    response->status.code = autoware_adapi_v1_msgs::msg::ResponseStatus::UNKNOWN;
     response->status.message = "Current vehicle mode is manual. The request is ignored.";
     return;
   }
 
   // open/close the door
+  const bool open =
+    request->doors.front().command == autoware_adapi_v1_msgs::msg::DoorCommand::OPEN;
   door_cmd_pub_->publish(createClearOverrideDoorCommand());
   rclcpp::Rate(10.0).sleep();  // avoid message loss
-  door_cmd_pub_->publish(createDoorCommand(request->open));
-  response->status.code = tier4_external_api_msgs::msg::ResponseStatus::SUCCESS;
+  door_cmd_pub_->publish(createDoorCommand(open));
+  response->status.success = true;
 
-  if (request->open) {
+  if (open) {
     // open the door
     response->status.message = "Success to open the door.";
   } else {
@@ -805,26 +823,26 @@ void PacmodInterface::setDoor(
   }
 }
 
-tier4_api_msgs::msg::DoorStatus PacmodInterface::toAutowareDoorStatusMsg(
+autoware_adapi_v1_msgs::msg::DoorStatus PacmodInterface::toAutowareDoorStatusMsg(
   const pacmod3_msgs::msg::SystemRptInt & msg_ptr)
 {
+  using autoware_adapi_v1_msgs::msg::DoorStatus;
   using pacmod3_msgs::msg::SystemRptInt;
-  using tier4_api_msgs::msg::DoorStatus;
   DoorStatus door_status;
 
   door_status.status = DoorStatus::UNKNOWN;
 
   if (msg_ptr.command == SystemRptInt::DOOR_CLOSE && msg_ptr.output == SystemRptInt::DOOR_OPEN) {
     // do not used (command & output are always the same value)
-    door_status.status = DoorStatus::DOOR_CLOSING;
+    door_status.status = DoorStatus::CLOSING;
   } else if (  // NOLINT
     msg_ptr.command == SystemRptInt::DOOR_OPEN && msg_ptr.output == SystemRptInt::DOOR_CLOSE) {
     // do not used (command & output are always the same value)
-    door_status.status = DoorStatus::DOOR_OPENING;
+    door_status.status = DoorStatus::OPENING;
   } else if (msg_ptr.output == SystemRptInt::DOOR_CLOSE) {
-    door_status.status = DoorStatus::DOOR_CLOSED;
+    door_status.status = DoorStatus::CLOSED;
   } else if (msg_ptr.output == SystemRptInt::DOOR_OPEN) {
-    door_status.status = DoorStatus::DOOR_OPENED;
+    door_status.status = DoorStatus::OPENED;
   }
 
   return door_status;
