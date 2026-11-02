@@ -242,6 +242,11 @@ void PacmodInterface::callbackRearDoor(
   status.stamp = rear_door_rpt->header.stamp;
   status.doors.push_back(toAutowareDoorStatusMsg(*rear_door_rpt));
   door_status_pub_->publish(status);
+
+  /* release the door after PACMod accepts the command */
+  if (rear_door_rpt->enabled && rear_door_rpt->output == rear_door_rpt->command) {
+    door_cmd_pub_->publish(createClearOverrideDoorCommand());
+  }
 }
 
 void PacmodInterface::callbackPacmodRpt(
