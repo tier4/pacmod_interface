@@ -116,3 +116,4 @@ colcon build --symlink-install --event-handlers=console_cohesion+ --cmake-args -
 | `low_vel_thresh`                  | double | threshold velocity to decide the velocity is low for `steering_wheel_rate_low_vel`           |
 | `hazard_thresh_time`              | double | threshold time to keep hazard lights                                                         |
 | `margin_time_for_gear_change`     | double | Minimum time between consecutive gear transition commands, designed to prevent gear chatter. |
+| `door_release_time`               | double | time to release the door command after a door command request                                |
