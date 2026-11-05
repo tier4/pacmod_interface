@@ -122,6 +122,7 @@ private:
   rclcpp::Publisher<autoware_adapi_v1_msgs::msg::DoorStatusArray>::SharedPtr door_status_pub_;
 
   rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr door_release_timer_;
 
   /* ros param */
   std::string base_frame_id_;
@@ -158,6 +159,8 @@ private:
   const int hazard_recover_cmd_num_ = 5;
 
   double margin_time_for_gear_change_;  // [s]
+
+  double door_release_time_;  // [s]
 
   autoware::vehicle_info_utils::VehicleInfo vehicle_info_;
 

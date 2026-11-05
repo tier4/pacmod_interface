@@ -62,6 +62,9 @@ PacmodInterface::PacmodInterface()
   /* parameter for preventing gear chattering */
   margin_time_for_gear_change_ = declare_parameter("margin_time_for_gear_change", 2.0);
 
+  /* parameter for releasing the door command */
+  door_release_time_ = declare_parameter("door_release_time", 10.0);
+
   /* initialize */
   prev_steer_cmd_.header.stamp = this->now();
   prev_steer_cmd_.command = 0.0;
@@ -812,6 +815,11 @@ void PacmodInterface::setDoor(
   door_cmd_pub_->publish(createClearOverrideDoorCommand());
   rclcpp::Rate(10.0).sleep();  // avoid message loss
   door_cmd_pub_->publish(createDoorCommand(open));
+  door_release_timer_ = rclcpp::create_timer(
+    this, get_clock(), rclcpp::Duration::from_seconds(door_release_time_), [this]() {
+      door_cmd_pub_->publish(createClearOverrideDoorCommand());
+      door_release_timer_->cancel();
+    });
   response->status.success = true;
 
   if (open) {
